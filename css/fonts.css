@@ -1,0 +1,17 @@
+@font-face {
+    font-family: "Atkinson";
+    src:
+    url("../assets/fonts/Atkinson_Hyperlegible/AtkinsonHyperlegible-Regular.ttf")
+}
+
+@font-face {
+    font-family: "Syne";
+    src:
+    url("../assets/fonts/Syne/Syne-VariableFont_wght.ttf")
+}
+
+@font-face {
+    font-family: "Space_Mono";
+    src:
+    url("../assets/fonts/Space_Mono/SpaceMono-Regular.ttf")
+}

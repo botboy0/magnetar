@@ -1,0 +1,155 @@
+@import url(palette.css);
+@import url(fonts.css);
+
+
+
+
+
+td {
+    border: solid ;
+    padding: 10px;
+    text-align: left;
+    font-family: Atkinson;
+    border-right: none;
+    border-bottom: none;
+}
+
+
+h1 {
+    color: var(--mag-violet);
+    background-image: linear-gradient(to right,
+            var(--mag-violet) 30%,
+            var(--mag-cyan) 60%,
+            var(--mag-magenta)100%);
+    color: transparent;
+    background-clip: text;
+    font-family: Syne;
+    font-weight: 800;
+    text-align: center;
+
+}
+
+h2 {
+    text-align: center;
+    font-weight: 1;
+}
+
+
+body {
+    background-color: var(--void);
+    color: var(--stardust);
+    font-family: Atkinson;
+}
+
+a {
+    color: var(--mag-cyan);
+}
+
+
+.corner {
+    padding: 10px;
+    border: var(--stardust);
+    border-style: solid;
+    width: fit-content;
+    position: relative;
+    margin: 0;
+    border-top: none;
+    border-left: none;
+    border-bottom: 0px;
+    border-right: none;
+}
+
+
+table {
+    width: 100%;
+    text-align: left;
+    border-collapse: collapse;
+}
+
+td:nth-child(1) {
+    border-left:none ;
+}
+
+td:nth-child(2) {
+    text-align: center;
+    width: 0%;
+}
+
+
+div {
+    border: var(--stardust);
+    border-style: solid;
+    text-align: center;
+    border-radius: 10px;
+    margin: 50px;
+
+
+}
+
+nav {
+    display: flex;
+    border: var(--stardust);
+    border-style: solid;
+    border-radius: 10px;
+    margin: 50px;
+}
+
+nav a {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+}
+
+nav a:first-child {
+    border-right: var(--stardust);
+    border-right-style: solid;
+}
+
+.games-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    border: none;
+    margin: 50px;
+}
+
+.games-grid > * {
+    aspect-ratio: 16 / 9;
+    margin: 0;
+    border: var(--stardust);
+    border-style: solid;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: Syne;
+    font-weight: 800;
+    font-size: 1.4rem;
+    text-decoration: none;
+    color: var(--stardust);
+}
+
+.games-grid > a:hover {
+    border-color: var(--mag-cyan);
+    color: var(--mag-cyan);
+}
+
+.games-grid > .empty {
+    opacity: 0.3;
+}
+
+.game-frame {
+    width: fit-content;
+    margin: 50px auto;
+}
+
+.game-frame canvas {
+    display: block;
+}
+
+.game-frame #message-container,
+.game-frame #message-container div {
+    border: none;
+    margin: 0;
+}
+

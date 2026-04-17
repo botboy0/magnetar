@@ -1,0 +1,13 @@
+:root{
+
+    /* Main colors for the Magnetar Project */
+    --mag-violet:#7c3aed; /*primary*/
+    --mag-cyan:#06b6d4; /*secondary*/
+    --mag-magenta:#c026d3; /*tertiary*/
+
+    /*Accents*/
+    --supernova:#f97316; /*highlights*/
+    --void:#0a0a0f;/*dark mode bg */
+    --stardust:#d1d5db; /*text*/
+    
+}
