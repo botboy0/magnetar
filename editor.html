@@ -1,11 +1,10 @@
 <!DOCTYPE html>
-<html>  
-<meta charset="UTF-8"> 
-
-
+<html>
 <head>
+    <meta charset="UTF-8">
     <title>Magnetar - Editor</title>
-    <link rel="stylesheet" href="css/styles.css">   
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.47.0/min/vs/loader.js"></script>
 </head>
 <body class="editor-body">
 
@@ -18,7 +17,7 @@
     <div class="editor-grid">
         <div class="editor-box">
             <h3 class="corner">CODE</h3>
-            <textarea class="editor-panel" id="editor-panel"></textarea>
+            <div class="editor-panel" id="editor-panel"></div>
         </div>
         <div class="editor-box">
             <h3 class="corner">PREVIEW</h3>
@@ -27,17 +26,63 @@
             </div>
         </div>
     </div>
-<button class="editor-run" id="play">Run</button>
-</body>
-
+    <button class="editor-run" id="play">Run</button>
 
 <script>
-    document.getElementById('play').addEventListener('click', () => {
-        const code = document.getElementById('editor-panel').value;
+    let editor;
+
+    require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.47.0/min/vs' }});
+require(['vs/editor/editor.main'], async () => {
+    monaco.editor.defineTheme('magnetar', {
+        base: 'vs-dark',
+        inherit: true,
+        rules: [],
+        colors: {
+            'editor.background': '#0a0a0f',
+            'editor.foreground': '#d1d5db',
+            'editorLineNumber.foreground': '#4a4d57',
+            'editorLineNumber.activeForeground': '#d1d5db',
+            'editorCursor.foreground': '#06b6d4',
+            'editor.lineHighlightBackground': '#00000000',
+        }
+    });
+
+    let initialCode = '-- could not load fixture\n';
+    try {
+        const response = await fetch('fixtures/hello.lua');
+        if (response.ok) {
+            initialCode = await response.text();
+        }
+    } catch (e) {
+        console.warn('Failed to load fixture:', e);
+    }
+
+    editor = monaco.editor.create(document.getElementById('editor-panel'), {
+        value: initialCode,
+        language: 'lua',
+        theme: 'magnetar',
+        automaticLayout: true,
+        tabSize: 2,
+        minimap: { enabled: false },
+        scrollbar: { horizontal: 'hidden', verticalScrollbarSize: 8 },
+        scrollBeyondLastLine: false,
+        wordWrap: 'on',
+    });
+
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, run);
+    requestAnimationFrame(() => editor.layout());
+});
+
+    function run() {
+        if (!editor) return;
+        const code = editor.getValue();
         sessionStorage.setItem('magnetar_code', code);
         document.getElementById('runner').src = 'games/test_a/?t=' + Date.now();
         console.log('Saved to storage:', code);
-    });
+    }
+
+    document.getElementById('play').addEventListener('click', run);
 </script>
-    
+
+</body>
 </html>

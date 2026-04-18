@@ -76,14 +76,12 @@ td:nth-child(2) {
 }
 
 
-div {
+.panel {
     border: var(--stardust);
     border-style: solid;
     text-align: center;
     border-radius: 10px;
     margin: 50px;
-
-
 }
 
 nav {
@@ -178,14 +176,21 @@ html:has(.games-body)::-webkit-scrollbar {
 .editor-box {
     display: flex;
     flex-direction: column;
+    border: var(--stardust) solid;
+    border-radius: 10px;
+    overflow: hidden;
 }
-
 .editor-box > h3.corner {
     font-family: Atkinson;
     font-size: 0.9rem;
     font-weight: normal;
     letter-spacing: 0.1em;
     padding: 8px 12px;
+    width: 100%;
+    box-sizing: border-box;
+    border: none;
+    border-bottom: var(--stardust) solid;
+    border-radius: 0;
 }
 
 .editor-box .editor-panel,
@@ -193,28 +198,18 @@ html:has(.games-body)::-webkit-scrollbar {
     margin: 0;
     border: none;
     border-radius: 0;
-    border-top: var(--stardust) solid;
     flex: 1;
-     background-color: var(--void);
+    background-color: var(--void);
 }
 
 .editor-panel {
     box-sizing: border-box;
     height: 40vh;
-    padding: 20px;
-    text-align: left;
-    font-family: Space_Mono;
-    color: var(--mag-cyan);
-    outline: none;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;
 }
-
 .editor-preview {
     box-sizing: border-box;
-    aspect-ratio: 4 / 3;
+    height: 40vh;
     padding: 0;
     overflow: hidden;
 }
@@ -238,9 +233,5 @@ html:has(.games-body)::-webkit-scrollbar {
     cursor: pointer;
     background: none;
     border:  var(--stardust) solid
-}
-/* Remove the resize handle from the editor panel */
-.editor-panel {
-    resize: none;
 }
 
