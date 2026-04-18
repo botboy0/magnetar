@@ -172,6 +172,7 @@ html:has(.games-body)::-webkit-scrollbar {
 
 .editor-grid > * {
     margin: 0;
+    min-width: 0;
 }
 
 .editor-box {
@@ -198,18 +199,21 @@ html:has(.games-body)::-webkit-scrollbar {
 
 .editor-panel {
     box-sizing: border-box;
-    min-height: 40vh;
+    height: 40vh;
     padding: 20px;
     text-align: left;
     font-family: Space_Mono;
     color: var(--mag-cyan);
     outline: none;
-    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .editor-preview {
     box-sizing: border-box;
-    min-height: 40vh;
+    height: 40vh;
     padding: 0;
     overflow: hidden;
 }
