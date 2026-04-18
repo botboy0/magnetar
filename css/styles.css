@@ -214,7 +214,7 @@ html:has(.games-body)::-webkit-scrollbar {
 
 .editor-preview {
     box-sizing: border-box;
-    height: 40vh;
+    aspect-ratio: 4 / 3;
     padding: 0;
     overflow: hidden;
 }
