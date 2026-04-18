@@ -18,17 +18,25 @@
     <div class="editor-grid">
         <div class="editor-box">
             <h3 class="corner">CODE</h3>
-            <div class="editor-panel" contenteditable="true"></div>
+            <textarea class="editor-panel" id="editor-panel"></textarea>
         </div>
         <div class="editor-box">
             <h3 class="corner">PREVIEW</h3>
             <div class="editor-preview">
-                <iframe></iframe>
+                <iframe src="games/test_a/" id="runner"></iframe>
             </div>
         </div>
     </div>
-
+<button class="editor-run" id="play">Run</button>
 </body>
 
+
+<script>
+    document.getElementById('play').addEventListener('click', () => {
+        const code = document.getElementById('editor-panel').value;
+        sessionStorage.setItem('magnetar_code', code);
+        console.log('Saved to storage:', code);
+    });
+</script>
     
 </html>

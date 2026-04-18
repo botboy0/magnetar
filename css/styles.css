@@ -195,6 +195,7 @@ html:has(.games-body)::-webkit-scrollbar {
     border-radius: 0;
     border-top: var(--stardust) solid;
     flex: 1;
+     background-color: var(--void);
 }
 
 .editor-panel {
@@ -224,5 +225,22 @@ html:has(.games-body)::-webkit-scrollbar {
     min-height: 40vh;
     border: none;
     display: block;
+}
+
+.editor-run {
+    display: block;
+    margin: 20px auto;
+    padding: 10px 20px;
+    font-family: Syne;
+    font-weight: 800;
+    color: var(--stardust);
+    border-radius: 5px;
+    cursor: pointer;
+    background: none;
+    border:  var(--stardust) solid
+}
+/* Remove the resize handle from the editor panel */
+.editor-panel {
+    resize: none;
 }
 
