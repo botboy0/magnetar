@@ -16,18 +16,23 @@ td {
 
 
 h1 {
-    color: var(--mag-violet);
-    background-image: linear-gradient(to right,
-            var(--mag-violet) 30%,
-            var(--mag-cyan) 60%,
-            var(--mag-magenta)100%);
-    color: transparent;
-    background-clip: text;
     font-family: Syne;
     font-weight: 800;
     text-align: center;
-
+    display: block;
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+    background-image: linear-gradient(135deg,
+            var(--mag-violet),
+            var(--mag-cyan),
+            var(--mag-magenta));
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
 }
+
 
 h2 {
     text-align: center;

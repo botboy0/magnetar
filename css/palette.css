@@ -1,13 +1,17 @@
-:root{
-
+:root {
     /* Main colors for the Magnetar Project */
-    --mag-violet:#7c3aed; /*primary*/
-    --mag-cyan:#06b6d4; /*secondary*/
-    --mag-magenta:#c026d3; /*tertiary*/
+    --mag-violet:   #7c3aed;   /* primary */
+    --mag-cyan:     #06b6d4;   /* secondary */
+    --mag-magenta:  #c026d3;   /* tertiary */
 
-    /*Accents*/
-    --supernova:#f97316; /*highlights*/
-    --void:#0a0a0f;/*dark mode bg */
-    --stardust:#d1d5db; /*text*/
-    
+    /* Accents */
+    --supernova:    #f97316;   /* highlights */
+    --void:         #0a0a0f;   /* dark mode bg */
+    --stardust:     #d1d5db;   /* text */
+
+    /* Surfaces */
+    --void-2:       #12121a;   /* slightly lifted surface */
+    --void-3:       #1a1a24;   /* panel header bar */
+    --muted:        #4a4d57;   /* disabled / placeholder borders */
+    --muted-2:      #6b6e78;   /* secondary text */
 }

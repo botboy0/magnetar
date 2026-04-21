@@ -1,0 +1,230 @@
+/* ============================================================
+   Top strip — Navigator + project identity
+   Extracted from editor_v2_mockup.html.
+   ============================================================ */
+
+.topstrip {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 6px 14px;
+  margin: 0;
+  min-height: 42px;
+  height: 42px;
+  overflow: visible;
+  background: #0d0d14;
+  border-bottom: 1px solid var(--muted);
+  box-shadow: 0 1px 0 rgba(6, 182, 212, 0.08), 0 12px 32px -16px rgba(0, 0, 0, 0.8);
+}
+
+.topstrip .project-bar {
+  align-self: center;
+}
+
+.topstrip .navigator {
+  align-self: flex-start;
+}
+
+/* ---------- Navigator ---------- */
+.navigator {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+}
+
+/* Plasma border wraps the entire .navigator box as it grows. */
+.navigator::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 9px;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--mag-violet), var(--mag-cyan), var(--mag-magenta));
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  opacity: var(--nav-border-opacity, 0.45);
+  transition: opacity 0.2s;
+  pointer-events: none;
+  z-index: 1;
+}
+.navigator:hover::before { opacity: 0.8; }
+
+@property --nav-border-opacity {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0.45;
+}
+
+.navigator-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 12px 5px 14px;
+  background: var(--void-2);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, border-radius 0.25s;
+  font-family: inherit;
+  color: inherit;
+  width: 100%;
+  z-index: 2;
+}
+.navigator-trigger:hover {
+  background: var(--void-3);
+}
+.navigator.open .navigator-trigger {
+  border-radius: 8px 8px 0 0;
+  background: linear-gradient(180deg, rgba(6,182,212,0.12), rgba(6,182,212,0.04));
+}
+
+.navigator-trigger .wordmark {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+.navigator-trigger .wordmark .mag {
+  font-family: "Syne", sans-serif;
+  font-weight: 800;
+  font-size: 1.15rem;
+  letter-spacing: -0.04em;
+  background: linear-gradient(135deg, var(--mag-violet), var(--mag-cyan), var(--mag-magenta));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.navigator-trigger .chev {
+  width: 18px;
+  height: 18px;
+  stroke: url(#plasma-chev);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  transition: opacity 0.15s;
+  opacity: 0.7;
+  transform-origin: 50% 50%;
+}
+.navigator-trigger:hover .chev { opacity: 1; }
+.navigator.open .navigator-trigger .chev { opacity: 1; }
+
+/* ---------- Dropdown ---------- */
+.nav-dropdown {
+  background: var(--void-2);
+  border: none;
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+  max-height: 0;
+}
+
+.nav-dropdown > .nav-dropdown-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px;
+}
+
+.nav-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  color: var(--stardust);
+  font-family: "Atkinson Hyperlegible", sans-serif;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(-4px) scale(0.96);
+  transform-origin: 50% 0%;
+}
+.nav-dropdown-item:hover {
+  background: linear-gradient(180deg, rgba(6,182,212,0.18), rgba(6,182,212,0.08));
+  color: var(--mag-cyan);
+  box-shadow: inset 0 0 0 1px rgba(6,182,212,0.25);
+}
+.nav-dropdown-item svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  fill: none;
+  flex-shrink: 0;
+}
+
+/* ---------- Project identity bar ---------- */
+.project-bar {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+.project-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "Syne", sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--stardust);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.project-title.browse-heading {
+  font-family: "Syne", sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--stardust);
+  background: none;
+  -webkit-text-fill-color: initial;
+}
+
+.project-pen {
+  width: 14px;
+  height: 14px;
+  stroke: var(--muted-2);
+  stroke-width: 1.8;
+  fill: none;
+  cursor: pointer;
+  transition: stroke 0.15s;
+}
+.project-pen:hover {
+  stroke: var(--mag-cyan);
+}
+
+.project-caption {
+  font-family: "Space Mono", monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+  white-space: nowrap;
+}
+.project-caption .by {
+  color: var(--mag-cyan);
+  text-transform: none;
+  letter-spacing: 0;
+}
