@@ -4,15 +4,47 @@
     <meta charset="UTF-8">
     <title>Magnetar - Editor</title>
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/components/top-strip.css">
+    <script src="vendor/anime.umd.min.js"></script>
+    <script type="module" src="js/main-editor.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.47.0/min/vs/loader.js"></script>
 </head>
 <body class="editor-body">
 
-    <nav>
-        <a href="devlog.html">Devlog</a>
-        <a href="index.html">Games</a>
-        <a href="editor.html">Editor</a>
-    </nav>
+    <svg width="0" height="0" style="position:absolute">
+      <defs>
+        <linearGradient id="plasma-chev" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#8b5cf6"/>
+          <stop offset="50%" stop-color="#06b6d4"/>
+          <stop offset="100%" stop-color="#d946ef"/>
+        </linearGradient>
+      </defs>
+    </svg>
+
+    <header class="topstrip">
+      <div class="navigator">
+        <button class="navigator-trigger" aria-haspopup="menu" aria-expanded="false" aria-label="Navigate">
+          <span class="wordmark">
+            <span class="mag">MAGNETAR</span>
+          </span>
+          <svg class="chev" viewBox="0 0 24 24" aria-hidden="true">
+            <polyline points="7 8 12 12 17 8"/>
+            <polyline points="7 14 12 18 17 14"/>
+          </svg>
+        </button>
+        <div class="nav-dropdown" role="menu">
+          <div class="nav-dropdown-inner"></div>
+        </div>
+      </div>
+      <div class="project-bar">
+        <span class="project-title">untitled</span>
+        <svg class="project-pen" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 20h9"/>
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+        </svg>
+        <span class="project-caption">A <span class="by">MAGNETAR</span> PROJECT BY trynda</span>
+      </div>
+    </header>
 
     <div class="editor-grid">
         <div class="editor-box">
