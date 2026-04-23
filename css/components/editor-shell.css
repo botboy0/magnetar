@@ -1,0 +1,450 @@
+/* ============================================================
+   Editor shell — workspace layout, panel scaffold, preview
+   stage, preview strip, status line, code column, code footer.
+   Extracted from magnetar_editor_final_mockup.html.
+
+   The `.panel` / `.panel-header` class names are editor-owned.
+   Devlog's former `.panel` was renamed to `.devlog-panel` so
+   these selectors stay unscoped and the CSS mirrors the mockup.
+   ============================================================ */
+
+/* ---------- workspace ----------
+   Outer shell: dock on the left + editor shell on the right.
+   Stacks on narrow screens (dock goes horizontal via dock.css). */
+.workspace {
+  display: flex;
+  align-items: stretch;
+  margin: 24px 14px 30px;
+  gap: 16px;
+}
+@media (max-width: 1100px) {
+  .workspace {
+    flex-direction: column;
+    margin: 16px 14px 30px;
+  }
+}
+
+/* ---------- main grid ----------
+   Phase 1: preview is the hero. 3fr / 2fr favoring preview.
+   Stacks on narrower screens. */
+.editor-shell {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 20px;
+}
+@media (max-width: 1100px) {
+  .editor-shell {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- panel scaffold ---------- */
+.panel {
+  border: 1px solid var(--stardust);
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--void);
+}
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--void-3);
+  border-bottom: 1px solid var(--stardust);
+  font-family: "Atkinson Hyperlegible", sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+.panel-header .label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.panel-header .label::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--mag-cyan);
+}
+.panel-header .actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* ---------- preview column ---------- */
+.preview-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* preview canvas — Phase 1 "preview is the hero" */
+.preview-stage {
+  aspect-ratio: 16 / 10;
+  background:
+    radial-gradient(ellipse at center, rgba(124, 58, 237, 0.12) 0%, transparent 60%),
+    linear-gradient(180deg, #0e0e16 0%, #05050a 100%);
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--stardust);
+}
+
+/* placeholder shapes — mimicking the fixture's running visual.
+   Positioning for each shape comes from inline style in the HTML
+   so the mockup's exact composition can be reproduced. */
+.preview-stage .shape {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(0.5px);
+  box-shadow: 0 0 40px currentColor;
+  opacity: 0.9;
+}
+.preview-stage .shape.v { background: var(--mag-violet);  color: var(--mag-violet); }
+.preview-stage .shape.c { background: var(--mag-cyan);    color: var(--mag-cyan); }
+.preview-stage .shape.m { background: var(--mag-magenta); color: var(--mag-magenta); }
+.preview-stage .shape.s { background: var(--supernova);   color: var(--supernova); }
+
+.preview-stage .hud {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  font-family: "Space Mono", monospace;
+  font-size: 0.72rem;
+  color: rgba(209, 213, 219, 0.6);
+  pointer-events: none;
+}
+
+/* ---------- preview control strip ----------
+   Phase 1 + 2 — Run + Fork + metrics live here, primary actions
+   in the same household as the preview they drive. */
+.preview-strip {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 14px;
+  background: var(--void-3);
+  font-family: "Space Mono", monospace;
+  font-size: 0.82rem;
+  color: var(--muted-2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.preview-strip .btn-icon {
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: transparent;
+  color: var(--stardust);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+.preview-strip .btn-icon:hover { background: rgba(255, 255, 255, 0.06); }
+.preview-strip .btn-icon svg {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.preview-strip .divider {
+  width: 1px;
+  height: 20px;
+  background: var(--muted);
+}
+
+/* Run — primary action, same household as the preview it drives */
+.preview-strip .btn-run-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 10px;
+  background: var(--mag-cyan);
+  color: var(--void);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Syne", sans-serif;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.35);
+  transition: box-shadow 0.2s, transform 0.08s;
+}
+.preview-strip .btn-run-inline:hover {
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.55);
+}
+.preview-strip .btn-run-inline:active {
+  transform: translateY(1px);
+}
+.preview-strip .btn-run-inline .play-glyph {
+  width: 10px;
+  height: 10px;
+  fill: var(--void);
+  stroke: none;
+}
+
+/* Fork — co-primary, peer to Run. Supernova accent per CI guide. */
+.preview-strip .btn-fork-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 10px;
+  background: var(--supernova);
+  color: var(--void);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Syne", sans-serif;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: 0 0 12px rgba(249, 115, 22, 0.35);
+  transition: box-shadow 0.2s, transform 0.08s;
+}
+.preview-strip .btn-fork-inline:hover {
+  box-shadow: 0 0 20px rgba(249, 115, 22, 0.55);
+}
+.preview-strip .btn-fork-inline:active {
+  transform: translateY(1px);
+}
+.preview-strip .btn-fork-inline .fork-glyph {
+  width: 12px;
+  height: 12px;
+  stroke: var(--void);
+  fill: none;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.preview-strip .metric {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+}
+.preview-strip .metric .k { color: var(--muted); }
+.preview-strip .metric .v { color: var(--stardust); }
+.preview-strip .metric .v.good { color: var(--mag-cyan); }
+.preview-strip .spacer { flex: 1; }
+
+/* ---------- unified status line ----------
+   Left: artifact identity (fixture, author, tags) — "what is this"
+   Right: runtime status (compile badge, engine versions) — "what's it doing"
+   One visual grammar, one horizontal line. DO NOT split back into two
+   strips — this was the single element Trynda pushed back on hardest
+   in earlier rounds. */
+.status-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background: var(--void-2);
+  border-top: 1px solid var(--muted);
+  font-family: "Space Mono", monospace;
+  font-size: 0.82rem;
+}
+.status-line .left,
+.status-line .right {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Space Mono compensation — the font's line-box has an over-allocated
+   ascender, which shifts visible glyph ink below the geometric center
+   of a flex row by ~1.37px at 0.82rem. Middots (·) sit higher in the
+   em-box naturally and don't need this shift — they're explicitly
+   excluded. The badge has its own pill-contained centering and is
+   also excluded. */
+.status-line .left > *:not(.meta-sep),
+.status-line .right > *:not(.badge):not(.meta-sep) {
+  position: relative;
+  top: -0.12em;
+}
+/* Meta-seps inside a compensated container (.runtime-v) would ride
+   their parent's -0.12em lift. Counter-compensate them back. */
+.status-line .runtime-v .meta-sep {
+  position: relative;
+  top: 0.12em;
+}
+
+.status-line .meta-title {
+  color: var(--stardust);
+  font-size: 0.82rem;
+}
+.status-line .meta-dim { color: var(--muted-2); }
+.status-line .meta-author {
+  color: var(--mag-cyan);
+  cursor: pointer;
+}
+.status-line .meta-author:hover { text-decoration: underline; }
+.status-line .meta-sep { color: var(--muted); }
+.status-line .meta-tag {
+  color: var(--mag-violet);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.status-line .meta-tag:hover { color: var(--mag-magenta); }
+.status-line .runtime-v { color: var(--muted-2); }
+
+.status-line .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.status-line .badge.ok {
+  background: rgba(6, 182, 212, 0.12);
+  color: var(--mag-cyan);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+}
+.status-line .badge.ok::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--mag-cyan);
+  box-shadow: 0 0 6px var(--mag-cyan);
+}
+.status-line .badge.err {
+  background: rgba(249, 115, 22, 0.12);
+  color: var(--supernova);
+  border: 1px solid rgba(249, 115, 22, 0.3);
+}
+.status-line .badge.err::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--supernova);
+  box-shadow: 0 0 6px var(--supernova);
+}
+
+/* ---------- code column ---------- */
+.code-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* fixture dropdown in code header — Phase 4. Renders disabled-looking
+   in c3 until c4 wires the behavior. */
+.fixture-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--muted);
+  color: var(--stardust);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-family: "Space Mono", monospace;
+  font-size: 0.7rem;
+  cursor: pointer;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.fixture-select:hover {
+  border-color: var(--mag-cyan);
+  color: var(--mag-cyan);
+}
+.fixture-select .caret { color: var(--muted-2); }
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--muted);
+  color: var(--muted-2);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-family: "Space Mono", monospace;
+  font-size: 0.7rem;
+  cursor: pointer;
+  letter-spacing: 0;
+  text-transform: none;
+  transition: all 0.15s;
+}
+.btn-ghost:hover {
+  border-color: var(--mag-cyan);
+  color: var(--mag-cyan);
+}
+
+/* the code stage — styled placeholder in c3; Monaco mounts into this
+   element in c4. Keeping the mock syntax-highlight classes in place so
+   the placeholder markup can render the c2 "hello.lua" content with
+   real coloring until Monaco takes over. */
+.code-stage {
+  flex: 1;
+  background: var(--void);
+  padding: 12px 0 0;
+  font-family: "Space Mono", monospace;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  overflow: hidden;
+  position: relative;
+  min-height: 420px;
+}
+.code-stage pre {
+  margin: 0;
+  padding: 0 14px 14px;
+  white-space: pre;
+  overflow-x: auto;
+}
+.code-stage .ln {
+  display: inline-block;
+  width: 2.2em;
+  text-align: right;
+  color: var(--muted);
+  padding-right: 1em;
+  user-select: none;
+}
+.code-stage .ln.active { color: var(--stardust); }
+.code-stage .cm { color: var(--muted-2); font-style: italic; }
+.code-stage .kw { color: var(--mag-violet); }
+.code-stage .fn { color: var(--mag-cyan); }
+.code-stage .st { color: var(--supernova); }
+.code-stage .nm { color: var(--mag-magenta); }
+.code-stage .pn { color: var(--stardust); }
+
+/* code footer — Phase 6 "cursor position + char count" */
+.code-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  background: var(--void-3);
+  border-top: 1px solid var(--muted);
+  font-family: "Space Mono", monospace;
+  font-size: 0.8rem;
+  color: var(--muted-2);
+  letter-spacing: 0.05em;
+}
+.code-footer .right {
+  display: flex;
+  gap: 14px;
+}

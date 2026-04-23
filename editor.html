@@ -4,10 +4,12 @@
     <meta charset="UTF-8">
     <title>Magnetar - Editor</title>
     <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="css/components/top-strip.css">
+<link rel="stylesheet" href="css/components/top-strip.css">
+<link rel="stylesheet" href="css/components/dock.css">
+<link rel="stylesheet" href="css/components/editor-shell.css">
     <script src="vendor/anime.umd.min.js"></script>
-    <script type="module" src="js/main-editor.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.47.0/min/vs/loader.js"></script>
+    <script type="module" src="js/main-editor.js"></script>
 </head>
 <body class="editor-body">
 
@@ -46,75 +48,143 @@
       </div>
     </header>
 
-    <div class="editor-grid">
-        <div class="editor-box">
-            <h3 class="corner">CODE</h3>
-            <div class="editor-panel" id="editor-panel"></div>
-        </div>
-        <div class="editor-box">
-            <h3 class="corner">PREVIEW</h3>
-            <div class="editor-preview">
-                <iframe src="games/test_a/" id="runner"></iframe>
+    <div class="workspace">
+
+      <!-- Dock — 5 icons, click-log only in c3. Panel opening wires in later. -->
+      <aside class="dock" aria-label="Tools">
+        <button class="dock-icon" data-panel="blueprints" title="Blueprints — your .magnetar files (scenes, entities, configs)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M3 5a2 2 0 0 1 2-2h10l5 5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="14 3 14 9 20 9"/>
+            <line x1="8" y1="13" x2="16" y2="13"/>
+            <line x1="8" y1="17" x2="13" y2="17"/>
+          </svg>
+          <span class="dock-label">Blueprints</span>
+        </button>
+        <button class="dock-icon" data-panel="assets" title="Assets — sprites, audio, fonts">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+          <span class="dock-label">Assets</span>
+        </button>
+        <button class="dock-icon" data-panel="plugins" title="Plugins — editor extensions & community plugins">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L8.61 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 8.61a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68l1.683-1.682a2.414 2.414 0 0 1 3.414 0z"/>
+          </svg>
+          <span class="dock-label">Plugins</span>
+        </button>
+        <button class="dock-icon" data-panel="output" title="Output — debug output, print, stack traces">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <rect x="3" y="4" width="18" height="16" rx="2"/>
+            <polyline points="7 10 10 13 7 16"/>
+            <line x1="13" y1="16" x2="17" y2="16"/>
+          </svg>
+          <span class="dock-label">Output</span>
+        </button>
+        <button class="dock-icon" data-panel="export" title="Export — package & download your work">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M12 3v12"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/>
+          </svg>
+          <span class="dock-label">Export</span>
+        </button>
+      </aside>
+
+      <main class="editor-shell">
+
+        <!-- Preview column -->
+        <section class="preview-col">
+          <div class="panel">
+            <div class="panel-header">
+              <div class="label">Preview</div>
             </div>
-        </div>
+
+            <div class="preview-stage">
+              <div class="hud">press Run to start</div>
+              <div class="shape v" style="width:52px;height:52px;top:38%;left:22%"></div>
+              <div class="shape c" style="width:38px;height:38px;top:55%;left:35%"></div>
+              <div class="shape m" style="width:46px;height:46px;top:28%;left:48%"></div>
+              <div class="shape s" style="width:30px;height:30px;top:60%;left:58%"></div>
+              <div class="shape v" style="width:34px;height:34px;top:20%;left:72%"></div>
+              <div class="shape m" style="width:42px;height:42px;top:70%;left:78%"></div>
+              <div class="shape c" style="width:28px;height:28px;top:45%;left:85%"></div>
+              <div class="shape s" style="width:36px;height:36px;top:75%;left:14%"></div>
+            </div>
+
+            <!-- Preview control strip. Fork click-logs in c3; Run stays unwired until c5. -->
+            <div class="preview-strip">
+              <button class="btn-run-inline" id="play" title="Run (⌘↵)">
+                <svg viewBox="0 0 24 24" class="play-glyph" xmlns="http://www.w3.org/2000/svg"><path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/></svg>
+                <span class="run-label">Run</span>
+              </button>
+              <button class="btn-fork-inline" id="fork" title="Fork this project">
+                <svg viewBox="0 0 24 24" class="fork-glyph" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><path d="M18 9v2c0 .6-.4 1-1 1H7c-.6 0-1-.4-1-1V9"/><path d="M12 12v3"/></svg>
+                <span class="fork-label">Fork</span>
+              </button>
+              <span class="divider"></span>
+              <button class="btn-icon" title="Restart">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+              </button>
+              <button class="btn-icon" title="Pause">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="14" y="3" width="5" height="18" rx="1"/><rect x="5" y="3" width="5" height="18" rx="1"/></svg>
+              </button>
+              <span class="divider"></span>
+              <span class="metric"><span class="k">t</span><span class="v">—</span></span>
+              <span class="metric"><span class="k">fps</span><span class="v">—</span></span>
+              <span class="metric"><span class="k">res</span><span class="v">800 × 500</span></span>
+              <span class="spacer"></span>
+              <button class="btn-icon" title="Mute">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><line x1="22" x2="16" y1="9" y2="15"/><line x1="16" x2="22" y1="9" y2="15"/></svg>
+              </button>
+              <button class="btn-icon" title="Fullscreen">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M15 3h6v6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/><path d="M9 21H3v-6"/></svg>
+              </button>
+            </div>
+
+            <!-- Unified status line. c3 shows neutral placeholders; c4 wires project identity, c5 wires runtime status. -->
+            <div class="status-line">
+              <div class="left">
+                <span class="meta-title">untitled</span>
+              </div>
+              <div class="right">
+                <span class="runtime-v">love 11.5 <span class="meta-sep">·</span> lua 5.1</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Code column -->
+        <section class="code-col">
+          <div class="panel" style="flex:1;">
+            <div class="panel-header">
+              <div class="label">Code</div>
+              <div class="actions">
+                <button class="fixture-select" disabled>hello.lua <span class="caret">▾</span></button>
+              </div>
+            </div>
+
+            <div class="code-stage" id="editor-panel"></div>
+
+            <div class="code-footer">
+              <div class="left">lua · love2d</div>
+              <div class="right">
+                <span>ln —, col —</span>
+                <span>·</span>
+                <span>— chars</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+
     </div>
-    <button class="editor-run" id="play">Run</button>
 
-<script>
-    let editor;
 
-    require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.47.0/min/vs' }});
-require(['vs/editor/editor.main'], async () => {
-    monaco.editor.defineTheme('magnetar', {
-        base: 'vs-dark',
-        inherit: true,
-        rules: [],
-        colors: {
-            'editor.background': '#0a0a0f',
-            'editor.foreground': '#d1d5db',
-            'editorLineNumber.foreground': '#4a4d57',
-            'editorLineNumber.activeForeground': '#d1d5db',
-            'editorCursor.foreground': '#06b6d4',
-            'editor.lineHighlightBackground': '#00000000',
-        }
-    });
-
-    let initialCode = '-- could not load fixture\n';
-    try {
-        const response = await fetch('fixtures/hello.lua');
-        if (response.ok) {
-            initialCode = await response.text();
-        }
-    } catch (e) {
-        console.warn('Failed to load fixture:', e);
-    }
-
-    editor = monaco.editor.create(document.getElementById('editor-panel'), {
-        value: initialCode,
-        language: 'lua',
-        theme: 'magnetar',
-        automaticLayout: true,
-        tabSize: 2,
-        minimap: { enabled: false },
-        scrollbar: { horizontal: 'hidden', verticalScrollbarSize: 8 },
-        scrollBeyondLastLine: false,
-        wordWrap: 'on',
-    });
-
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, run);
-    requestAnimationFrame(() => editor.layout());
-});
-
-    function run() {
-        if (!editor) return;
-        const code = editor.getValue();
-        sessionStorage.setItem('magnetar_code', code);
-        document.getElementById('runner').src = 'games/test_a/?t=' + Date.now();
-        console.log('Saved to storage:', code);
-    }
-
-    document.getElementById('play').addEventListener('click', run);
-</script>
 
 </body>
 </html>

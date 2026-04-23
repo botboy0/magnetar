@@ -215,6 +215,37 @@
   stroke: var(--mag-cyan);
 }
 
+/* ---------- Inline-rename input ----------
+   Replaces the .project-title span during edit. Typography is
+   mirrored exactly so the transition is invisible — the user
+   should feel like they're typing into the title itself, not
+   swapping it for a form field.
+
+   Width is set inline from JS (measured via a hidden sizer
+   span) so the input grows/shrinks with its content. The cyan
+   underline is the only chrome that distinguishes edit state
+   from display state. */
+.project-title-input {
+  font-family: "Syne", sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--stardust);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0;
+  margin: 0;
+
+  /* subtle cyan underline signals "editing" without breaking layout */
+  border-bottom: 1px solid var(--mag-cyan);
+
+  /* caret matches our interactive-accent language */
+  caret-color: var(--mag-cyan);
+}
+
 .project-caption {
   font-family: "Space Mono", monospace;
   font-size: 0.7rem;

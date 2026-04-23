@@ -1,0 +1,113 @@
+/* ============================================================
+   Dock — vertical app-dock, 5 icons, left of editor shell.
+   Extracted from magnetar_editor_final_mockup.html.
+
+   Philosophy: the dock itself is not a container — no border,
+   no background, no panel. Each icon is its own tile that reads
+   as "an app" on its own. Five tiles stacked read as a dock;
+   removing the outer container avoids the "stapled to the top
+   of an empty rail" feel that a bordered rail would have.
+   ============================================================ */
+
+.dock {
+  flex: 0 0 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  gap: 6px;
+  align-self: flex-start; /* dock is as tall as its icons, no more */
+}
+
+.dock-icon {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  background: var(--void-2);
+  border: none;
+  color: var(--muted-2);
+  cursor: pointer;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s, transform 0.1s;
+  z-index: 20;
+}
+.dock-icon svg { width: 20px; height: 20px; }
+
+.dock-icon:hover {
+  color: var(--stardust);
+  background: var(--void-3);
+  transform: translateY(-1px);
+}
+
+/* active state — the panel this icon opens is currently visible.
+   Unused in c3 (icons click-log only) but the rule lives here now
+   so the visual contract is set when c3+ panels wire in. */
+.dock-icon.active {
+  color: var(--mag-cyan);
+  background:
+    linear-gradient(180deg, rgba(6, 182, 212, 0.18), rgba(6, 182, 212, 0.08));
+  box-shadow:
+    inset 0 0 0 1px rgba(6, 182, 212, 0.35),
+    0 0 12px rgba(6, 182, 212, 0.18);
+}
+.dock-icon.active::before {
+  content: "";
+  position: absolute;
+  left: -8px;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  background: var(--mag-cyan);
+  border-radius: 0 2px 2px 0;
+  box-shadow: 0 0 8px var(--mag-cyan);
+}
+
+/* hover label — appears to the right of the icon on hover */
+.dock-icon .dock-label {
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--void-3);
+  color: var(--stardust);
+  font-family: "Space Mono", monospace;
+  font-size: 0.72rem;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--muted);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  z-index: 100;
+}
+.dock-icon:hover .dock-label { opacity: 1; }
+
+/* horizontal dock on narrow screens — mirrors .workspace's stack */
+@media (max-width: 1100px) {
+  .dock {
+    flex: 0 0 auto;
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 0;
+    gap: 6px;
+    align-self: flex-start;
+  }
+  .dock-icon.active::before {
+    left: 10px;
+    right: 10px;
+    top: auto;
+    bottom: -8px;
+    width: auto;
+    height: 3px;
+    border-radius: 2px 2px 0 0;
+  }
+  .dock-icon .dock-label {
+    left: 50%;
+    top: calc(100% + 8px);
+    transform: translateX(-50%);
+  }
+}
