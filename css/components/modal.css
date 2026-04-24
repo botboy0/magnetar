@@ -1,0 +1,127 @@
+/* ============================================================
+   Modal — confirmation / prompt primitive.
+   Reusable across the app (first caller: c4d2 delete-file).
+
+   Visual grammar:
+   - Overlay: translucent black, fills viewport, click-outside to cancel
+   - Panel: var(--void-2) surface, cyan-accent border, small inset shadow
+   - Title: Syne 700, 1.1rem, stardust
+   - Message: Atkinson 400, 0.9rem, muted-2
+   - Cancel: ghost button (transparent, muted border)
+   - Confirm default: cyan gradient (same as preview Run button)
+   - Confirm destructive: supernova gradient (for delete / irreversible)
+   ============================================================ */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(5, 5, 10, 0.72);
+  /* slight blur gives the editor underneath a "pushed back" feel
+     without being heavy — matches how the Navigator dropdown
+     treats depth via shadow rather than opacity loss */
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+/* The [hidden] attribute defaults to `display: none` but any
+   explicit `display` rule overrides it by specificity. We use
+   display: flex for the open state, so we have to re-assert
+   display: none for the hidden state explicitly. */
+.modal-overlay[hidden] { display: none; }
+
+.modal-panel {
+  width: min(420px, 100%);
+  background: var(--void-2);
+  border: 1px solid var(--muted);
+  border-radius: 10px;
+  padding: 20px 22px 18px;
+  box-shadow:
+    0 0 0 1px rgba(6, 182, 212, 0.08),
+    0 24px 48px -12px rgba(0, 0, 0, 0.8);
+}
+
+.modal-title {
+  font-family: "Syne", sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--stardust);
+  letter-spacing: -0.01em;
+  margin-bottom: 8px;
+}
+
+.modal-message {
+  font-family: "Atkinson Hyperlegible", sans-serif;
+  font-size: 0.9rem;
+  color: var(--muted-2);
+  line-height: 1.5;
+  margin-bottom: 18px;
+  /* allow linebreaks in the caller's message */
+  white-space: pre-wrap;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Space Mono", monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  border: 1px solid transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.2s;
+}
+
+.modal-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.4);
+}
+
+/* Cancel — ghost, stardust label. Border carries the "this is
+   a button" signal while the transparent background preserves
+   the "lower-weight action" grammar versus the filled confirm. */
+.modal-btn-cancel {
+  background: transparent;
+  border-color: var(--muted);
+  color: var(--stardust);
+}
+.modal-btn-cancel:hover {
+  border-color: var(--stardust);
+  background: rgba(209, 213, 219, 0.06);
+}
+
+/* Confirm default — cyan, primary action grammar */
+.modal-btn-confirm {
+  background: var(--mag-cyan);
+  color: var(--void);
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.25);
+}
+.modal-btn-confirm:hover {
+  box-shadow: 0 0 16px rgba(6, 182, 212, 0.45);
+}
+
+/* Confirm destructive — supernova, for irreversible ops.
+   Focus ring switches to supernova too so the visual grammar
+   matches the button's role. */
+.modal-btn-confirm.destructive {
+  background: var(--supernova);
+  color: var(--void);
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.25);
+}
+.modal-btn-confirm.destructive:hover {
+  box-shadow: 0 0 16px rgba(249, 115, 22, 0.5);
+}
+.modal-btn-confirm.destructive:focus-visible {
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.5);
+}

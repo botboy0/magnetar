@@ -353,9 +353,11 @@
   min-width: 0;
 }
 
-/* fixture dropdown in code header — Phase 4. Renders disabled-looking
-   in c3 until c4 wires the behavior. */
-.fixture-select {
+/* File dropdown in code header — the button that opens the
+   file-list menu. Was called .fixture-select when it meant
+   "starter fixtures"; renamed in c4d1 when the concept shifted
+   to the active project's file list. */
+.file-select {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -369,12 +371,239 @@
   cursor: pointer;
   letter-spacing: 0;
   text-transform: none;
+
+  /* Truncate long filenames without breaking the header
+     layout. Full name visible via title= tooltip on hover. */
+  max-width: 22ch;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
-.fixture-select:hover {
+.file-select:hover {
   border-color: var(--mag-cyan);
   color: var(--mag-cyan);
 }
-.fixture-select .caret { color: var(--muted-2); }
+.file-select .caret {
+  color: var(--muted-2);
+  flex-shrink: 0;
+}
+
+/* ---------- file menu ----------
+   Opens below the .file-select button. Positioned relative
+   to the panel-header .actions container (the button's
+   parent), which is position: relative by default via its
+   flex context. If layout glitches, set .panel-header
+   .actions { position: relative } explicitly. */
+.file-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 14px;
+  z-index: 50;
+  min-width: 200px;
+  max-width: 320px;
+  background: var(--void-2);
+  border: 1px solid var(--muted);
+  border-radius: 6px;
+  padding: 4px;
+  box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.7);
+  font-family: "Space Mono", monospace;
+  font-size: 0.72rem;
+
+  /* Opt out of the .panel-header uppercase / letter-spacing
+     cascade so filenames render verbatim. D2/D3 content
+     inside the menu inherits these resets. */
+  text-transform: none;
+  letter-spacing: 0;
+}
+.panel-header .actions { position: relative; }
+
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--muted-2);
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+.file-row:hover {
+  background: rgba(6, 182, 212, 0.08);
+  color: var(--stardust);
+}
+.file-row.active {
+  color: var(--stardust);
+}
+.file-row-dot {
+  /* Fixed slot sized slightly wider than the dot itself so the
+     active dot's glow has room to render without visually
+     bleeding into the filename's leading space. */
+  width: 10px;
+  height: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.file-row-dot::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: transparent;
+}
+.file-row.active .file-row-dot::before {
+  background: var(--mag-cyan);
+  box-shadow: 0 0 6px var(--mag-cyan);
+}
+.file-row-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* Push the actions slot to the right edge of the row.
+     flex-grow fills whatever space is between the name and
+     the action icons, so the actions sit at the right. */
+  flex: 1;
+}
+
+/* ---------- file-row hover actions ----------
+   Slot on the right of each row. Contains the pen (D3) and
+   trash (D2) icons. Hidden by default, fades in on row hover.
+   Omitted entirely for main.lua — that row has no children
+   in the actions slot. */
+.file-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.12s;
+  flex-shrink: 0;
+}
+.file-row:hover .file-row-actions {
+  opacity: 1;
+}
+
+.file-row-trash {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--muted-2);
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s;
+}
+.file-row-trash svg {
+  width: 14px;
+  height: 14px;
+}
+.file-row-trash:hover {
+  color: var(--supernova);
+  background: rgba(249, 115, 22, 0.1);
+}
+
+/* Pen (rename) — same box/size grammar as trash; cyan accent
+   on hover to differentiate from the destructive trash. */
+.file-row-pen {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--muted-2);
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s;
+}
+.file-row-pen svg {
+  width: 13px;
+  height: 13px;
+}
+.file-row-pen:hover {
+  color: var(--mag-cyan);
+  background: rgba(6, 182, 212, 0.1);
+}
+
+/* ---------- inline edit state ----------
+   When a row is being edited (rename or "+ New" create), the
+   row gets .editing and its name span is swapped for an input.
+   We hide the hover actions during edit so the pen/trash don't
+   compete for the user's focus, and we pin the row's visual
+   state so it doesn't flicker on hover-out. */
+.file-row.editing .file-row-actions {
+  opacity: 0;
+  pointer-events: none;
+}
+.file-row.editing {
+  background: rgba(6, 182, 212, 0.06);
+}
+
+.file-row-input {
+  /* Inherit the row's Space Mono / size so the typing grammar
+     matches the surrounding filenames exactly. */
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0;
+  margin: 0;
+  color: var(--stardust);
+  font-family: inherit;
+  font-size: inherit;
+  letter-spacing: inherit;
+
+  /* Subtle underline mirrors the project-title rename grammar. */
+  border-bottom: 1px solid var(--mag-cyan);
+  caret-color: var(--mag-cyan);
+}
+
+/* Inline error — small Space Mono line directly below the
+   row it belongs to. Hidden by default; JS unhides and sets
+   textContent when validation fails. Visible until the user
+   edits the input. */
+.file-row-error {
+  padding: 4px 10px 6px 30px; /* align under the filename, past the dot slot */
+  font-family: "Space Mono", monospace;
+  font-size: 0.68rem;
+  color: var(--supernova);
+  letter-spacing: 0;
+}
+
+/* "+ New file" row — rendered at the bottom of the list. The
+   dot slot holds a plus glyph instead of the active indicator,
+   and the label color is muted so the row reads as an action
+   rather than an existing file. */
+.file-row-new {
+  color: var(--muted-2);
+  border-top: 1px solid var(--muted);
+  margin-top: 4px;
+  padding-top: 10px;
+}
+.file-row-new .file-row-dot {
+  color: var(--mag-cyan);
+  font-family: "Space Mono", monospace;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+.file-row-new .file-row-dot::before {
+  /* override the inactive dot's empty circle — we render a
+     literal "+" character in the same slot instead. */
+  content: none;
+}
+.file-row-new:hover {
+  color: var(--stardust);
+}
+.file-row-new.editing .file-row-dot {
+  color: var(--mag-cyan);
+}
 
 .btn-ghost {
   background: transparent;
