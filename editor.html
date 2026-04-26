@@ -105,15 +105,20 @@
             </div>
 
             <div class="preview-stage">
-              <div class="hud">press Run to start</div>
-              <div class="shape v" style="width:52px;height:52px;top:38%;left:22%"></div>
-              <div class="shape c" style="width:38px;height:38px;top:55%;left:35%"></div>
-              <div class="shape m" style="width:46px;height:46px;top:28%;left:48%"></div>
-              <div class="shape s" style="width:30px;height:30px;top:60%;left:58%"></div>
-              <div class="shape v" style="width:34px;height:34px;top:20%;left:72%"></div>
-              <div class="shape m" style="width:42px;height:42px;top:70%;left:78%"></div>
-              <div class="shape c" style="width:28px;height:28px;top:45%;left:85%"></div>
-              <div class="shape s" style="width:36px;height:36px;top:75%;left:14%"></div>
+              <!-- Pre-Run identity card. Shows project title + author
+                   while the iframe is hidden. main-editor.js writes
+                   the project title here at mount and re-renders on
+                   rename via the project:titlechange event. Author
+                   is hardcoded "trynda" until a real user concept
+                   lands; the topstrip caption hardcodes the same. -->
+              <div class="preview-title">
+                <div class="preview-title-name">untitled</div>
+                <div class="preview-title-author">by trynda</div>
+              </div>
+              <!-- Runtime iframe. Hidden until first Run; main-editor.js
+                   sets src + unhides + adds .running to .preview-stage,
+                   which hides the title card via CSS. -->
+              <iframe class="preview-frame" src="about:blank" hidden title="Preview"></iframe>
             </div>
 
             <!-- Preview control strip. Fork click-logs in c3; Run stays unwired until c5. -->

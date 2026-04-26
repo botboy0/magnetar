@@ -88,9 +88,13 @@
   min-width: 0;
 }
 
-/* preview canvas — Phase 1 "preview is the hero" */
+/* preview canvas — Phase 1 "preview is the hero".
+   Aspect-ratio matches the starter project's conf.lua (1280×720,
+   16:9). Projects with a different conf.lua will letterbox inside
+   this frame — that's correct: the runner respects whatever
+   Love2D picks, and we show the project's actual rendering area. */
 .preview-stage {
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 16 / 9;
   background:
     radial-gradient(ellipse at center, rgba(124, 58, 237, 0.12) 0%, transparent 60%),
     linear-gradient(180deg, #0e0e16 0%, #05050a 100%);
@@ -99,30 +103,60 @@
   border-bottom: 1px solid var(--stardust);
 }
 
-/* placeholder shapes — mimicking the fixture's running visual.
-   Positioning for each shape comes from inline style in the HTML
-   so the mockup's exact composition can be reproduced. */
-.preview-stage .shape {
+/* Pre-Run identity card. Centered project title + author; hidden
+   when the iframe takes over on first Run. Typography follows the
+   topstrip's hierarchy: project=stardust (calm), brand=plasma. The
+   stage version of the title is the same Syne family as the
+   topstrip but ~3× the size so it owns the empty state. */
+.preview-title {
   position: absolute;
-  border-radius: 50%;
-  filter: blur(0.5px);
-  box-shadow: 0 0 40px currentColor;
-  opacity: 0.9;
-}
-.preview-stage .shape.v { background: var(--mag-violet);  color: var(--mag-violet); }
-.preview-stage .shape.c { background: var(--mag-cyan);    color: var(--mag-cyan); }
-.preview-stage .shape.m { background: var(--mag-magenta); color: var(--mag-magenta); }
-.preview-stage .shape.s { background: var(--supernova);   color: var(--supernova); }
-
-.preview-stage .hud {
-  position: absolute;
-  top: 12px;
-  left: 14px;
-  font-family: "Space Mono", monospace;
-  font-size: 0.72rem;
-  color: rgba(209, 213, 219, 0.6);
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   pointer-events: none;
+  text-align: center;
+  padding: 0 24px;
 }
+.preview-title-name {
+  font-family: "Syne", sans-serif;
+  font-weight: 700;
+  font-size: 2.6rem;
+  letter-spacing: -0.02em;
+  color: var(--stardust);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.preview-title-author {
+  font-family: "Space Mono", monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  color: var(--muted-2);
+}
+
+/* Runtime iframe. Hidden until first Run, then fills the stage.
+   The runner.html inside scales the canvas to fit while preserving
+   its intrinsic aspect (driven by the project's conf.lua). */
+.preview-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  background: #000;
+}
+.preview-frame[hidden] { display: none; }
+
+/* When the project is running, hide the pre-Run title card so the
+   iframe owns the stage. One-way transition for now: once .running
+   is set on first Run, it stays — there's no Stop semantic in c5b. */
+.preview-stage.running .preview-title { display: none; }
 
 /* ---------- preview control strip ----------
    Phase 1 + 2 — Run + Fork + metrics live here, primary actions

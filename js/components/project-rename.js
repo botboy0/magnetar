@@ -2,18 +2,20 @@
    project-rename.js
    Pen-icon → inline-rename behavior for the project title.
 
-   Two DOM nodes currently display the title:
-     .topstrip .project-title
-     .status-line .meta-title
-   Both update in sync when rename commits.
+   Title display is now event-driven: this module dispatches a
+   `project:titlechange` CustomEvent on `document` whenever the
+   title needs to render (initial seed and every commit). Display
+   surfaces (topstrip, status-line, preview-stage, future project
+   list) listen and update themselves.
 
-   ⚠️ MIGRATION TRIGGER:
-   If a third display of the project title is ever added, this
-   module must be refactored to emit a `project:titlechange`
-   event on document (or similar pub/sub) rather than updating
-   nodes directly. Two direct updates is fine; three is the
-   threshold where ad-hoc coupling starts to rot. Do not add a
-   third direct update — that's the signal to generalize.
+   Migration history:
+     c2-c5b1: two direct mutations (.topstrip .project-title and
+              .status-line .meta-title) inside this module. The
+              header comment flagged a third update site as the
+              refactor trigger.
+     c5b1.6:  preview-stage title was the third site. Flipped to
+              event-driven here. Adding a fourth listener now
+              costs zero changes in this module.
 
    Commit mechanics (locked in conversation):
      - Enter or blur commits
@@ -28,10 +30,10 @@ const MAX_LEN = 60;
 
 /* Public entry point. Called once from main-editor.js with the
    bootstrapped project. Mutates project.title on commit and
-   invokes onCommit so the orchestrator can persist. */
+   invokes onCommit so the orchestrator can persist. Dispatches
+   project:titlechange for display surfaces to render. */
 export function initProjectRename(project, { onCommit } = {}) {
   const titleEl = document.querySelector('.topstrip .project-title');
-  const metaEl  = document.querySelector('.status-line .meta-title');
   const penEl   = document.querySelector('.topstrip .project-pen');
 
   if (!titleEl || !penEl) {
@@ -39,22 +41,23 @@ export function initProjectRename(project, { onCommit } = {}) {
     return;
   }
 
-  /* Seed both display nodes from the project. Chunk B left them
-     as hardcoded "untitled" in HTML; we replace that with the
-     actual stored value on boot. */
-  applyTitle(project.title, titleEl, metaEl);
+  /* Seed all display surfaces from the project. */
+  emitTitleChange(project.title);
 
   penEl.addEventListener('click', () => {
-    beginEdit(titleEl, metaEl, penEl, project, onCommit);
+    beginEdit(titleEl, penEl, project, onCommit);
   });
 }
 
-function applyTitle(title, titleEl, metaEl) {
-  titleEl.textContent = title;
-  if (metaEl) metaEl.textContent = title;
+/* Dispatch the title to anyone listening. Detail carries the
+   current title; listeners update their own DOM. */
+function emitTitleChange(title) {
+  document.dispatchEvent(new CustomEvent('project:titlechange', {
+    detail: { title },
+  }));
 }
 
-function beginEdit(titleEl, metaEl, penEl, project, onCommit) {
+function beginEdit(titleEl, penEl, project, onCommit) {
   const current = project.title;
 
   /* Swap the span for an input. Width is measured from the span
@@ -91,7 +94,7 @@ function beginEdit(titleEl, metaEl, penEl, project, onCommit) {
     if (!next) next = current; /* empty-after-trim = revert */
 
     endEdit(input, sizer, titleEl, penEl);
-    applyTitle(next, titleEl, metaEl);
+    emitTitleChange(next);
 
     if (next !== current) {
       project.title = next;
@@ -103,7 +106,7 @@ function beginEdit(titleEl, metaEl, penEl, project, onCommit) {
     if (settled) return;
     settled = true;
     endEdit(input, sizer, titleEl, penEl);
-    applyTitle(current, titleEl, metaEl);
+    emitTitleChange(current);
   };
 
   input.addEventListener('keydown', (e) => {
@@ -114,8 +117,9 @@ function beginEdit(titleEl, metaEl, penEl, project, onCommit) {
 }
 
 /* Restore the original span in place of the input and unhide
-   the pen. The span's text content is set by applyTitle() in
-   the caller — we just rebuild the DOM shape here. */
+   the pen. The span's text content is set by the title-change
+   listener in main-editor.js (driven by emitTitleChange) — we
+   just rebuild the DOM shape here. */
 function endEdit(input, sizer, titleEl, penEl) {
   sizer.remove();
   input.replaceWith(titleEl);

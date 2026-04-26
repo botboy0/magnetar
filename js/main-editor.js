@@ -10,7 +10,9 @@
    c4d1 — models registry + file-dropdown switch-only.
    c4d2 — delete file (modal primitive + trash icon).
    c4d3 — add file, rename file, inline validation.
-   c5 will add Run button wiring + status badge handling.
+   c5b1 — Run button wiring: payload assembly + iframe boot.
+   c5b2 will add Ctrl+Enter and multi-file verification.
+   c5c will wire status badge handling.
    ============================================================ */
 
 import { init as initTopStrip } from './components/top-strip.js';
@@ -43,26 +45,42 @@ async function bootstrapProject() {
   }
 
   /* First visit (or recovered-from-corruption): seed a new
-     project with main.lua as the starter (entry-point) file.
+     project with main.lua as the starter (entry-point) file
+     and conf.lua to set the default 1280×720 (16:9) window.
      Love2D runs main.lua as its entry point, and Magnetar
      inherits that convention; a project without main.lua is
-     not runnable. Seeding it on creation means fresh projects
-     work out of the box.
+     not runnable. Seeding both on creation means fresh projects
+     work out of the box at the expected canvas size.
 
-     If the fetch fails we still create the project, just with
-     a one-line comment explaining what happened — better than
-     refusing to boot. */
+     Canvas dimensions are project-controlled (via conf.lua),
+     not editor-controlled — the runner respects whatever
+     Love2D picks. See PROTOCOL.md.
+
+     If a fetch fails we still create the project, just with a
+     one-line comment in place of the missing file — better than
+     refusing to boot. A missing conf.lua is non-fatal: Love2D
+     falls back to its own defaults (800×600). */
   let starterCode = '-- could not load starter\n';
+  let confCode = '-- could not load default conf\n';
   try {
     const res = await fetch('fixtures/main.lua');
     if (res.ok) starterCode = await res.text();
   } catch (e) {
     console.warn('[editor] failed to load starter fixture:', e);
   }
+  try {
+    const res = await fetch('fixtures/conf.lua');
+    if (res.ok) confCode = await res.text();
+  } catch (e) {
+    console.warn('[editor] failed to load default conf:', e);
+  }
 
   const newId = createProject({
     title: 'untitled',
-    files: { 'main.lua': starterCode },
+    files: {
+      'main.lua': starterCode,
+      'conf.lua': confCode,
+    },
     activeFile: 'main.lua',
   });
 
@@ -74,7 +92,10 @@ async function bootstrapProject() {
     return {
       id: null,
       title: 'untitled',
-      files: { 'main.lua': starterCode },
+      files: {
+        'main.lua': starterCode,
+        'conf.lua': confCode,
+      },
       activeFile: 'main.lua',
     };
   }
@@ -118,9 +139,32 @@ async function bootstrapProject() {
 
   editor.onDidChangeModelContent(persist);
 
-  /* Project-title rename. Commit writes project.title and
-     persists immediately (not debounced — rename is a discrete
-     action, not a stream of keystrokes). */
+  /* Project-title rename. Display surfaces (topstrip, status-line,
+     preview-stage) listen for project:titlechange and update
+     themselves; project-rename.js dispatches the event on the
+     initial seed and on every commit/revert. Adding a fourth
+     surface (e.g. project list) is one more listener here.
+
+     Listeners are attached BEFORE initProjectRename runs so the
+     seed dispatch lands. Missing-element checks are silent: if a
+     surface isn't in the DOM, that surface just doesn't update. */
+  const titleSurfaces = [
+    document.querySelector('.topstrip .project-title'),
+    document.querySelector('.status-line .meta-title'),
+    document.querySelector('.preview-stage .preview-title-name'),
+  ].filter(Boolean);
+
+  document.addEventListener('project:titlechange', (e) => {
+    const title = e.detail?.title;
+    if (typeof title !== 'string') return;
+    for (const el of titleSurfaces) {
+      el.textContent = title;
+    }
+  });
+
+  /* Commit writes project.title and persists immediately (not
+     debounced — rename is a discrete action, not a stream of
+     keystrokes). */
   initProjectRename(project, {
     onCommit: () => {
       if (!project.id) return;
@@ -244,6 +288,64 @@ async function bootstrapProject() {
       editor.focus();
     },
   });
+
+  /* ---------- Run wiring (c5b1) ----------
+     Builds a v1 payload from the live Monaco models, writes it to
+     sessionStorage, and points the runtime iframe at runner.html.
+     Cache-bust query param forces a fresh boot every Run — Love.js
+     re-initializes from scratch each iframe load.
+
+     Reads model values, NOT project.files: autosave is debounced
+     300ms, so a fast-click Run could otherwise see stale content.
+     Models are current on every keystroke. (See PROTOCOL.md.) */
+  const previewStage = document.querySelector('.preview-stage');
+  const previewFrame = document.querySelector('.preview-frame');
+  const playBtn = document.getElementById('play');
+
+  function runProject() {
+    if (!previewFrame) {
+      console.warn('[run] no preview-frame element; aborting');
+      return;
+    }
+
+    const files = {};
+    for (const name of Object.keys(project.files)) {
+      const model = getModel(name);
+      if (!model) {
+        /* Defensive: every file in the registry should have a
+           model. If one's missing, skip with a warning rather
+           than failing the whole Run. The runner will surface
+           "Entry file not found" if main.lua is the casualty. */
+        console.warn(`[run] no model for ${name}; skipping`);
+        continue;
+      }
+      files[name] = model.getValue();
+    }
+
+    const payload = {
+      version: 1,
+      files,
+      entry: 'main.lua',
+    };
+
+    try {
+      sessionStorage.setItem('magnetar.runtime.payload', JSON.stringify(payload));
+    } catch (e) {
+      /* Quota exceeded, sessionStorage disabled, etc. The runner
+         will report "No project loaded" if we proceed, which is a
+         worse error than naming what actually went wrong. */
+      console.error('[run] failed to write payload to sessionStorage:', e);
+      return;
+    }
+
+    if (previewStage) previewStage.classList.add('running');
+    previewFrame.hidden = false;
+    previewFrame.src = 'runtime/runner.html?t=' + Date.now();
+  }
+
+  if (playBtn) {
+    playBtn.addEventListener('click', runProject);
+  }
 })();
 
 /* Dock icon stubs. Click-log only — the panels these icons will

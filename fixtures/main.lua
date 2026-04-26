@@ -20,8 +20,9 @@ function love.load()
     math.randomseed(os.time())
 
     -- start with a few shapes so it's not empty
+    local w, h = love.graphics.getDimensions()
     for i = 1, 8 do
-        spawn(math.random(50, 750), math.random(50, 550))
+        spawn(math.random(50, w - 50), math.random(50, h - 50))
     end
 end
 

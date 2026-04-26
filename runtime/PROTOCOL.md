@@ -45,6 +45,7 @@ Fields deliberately omitted to keep the surface small:
 - **No `projectId`.** The runtime doesn't need to know which project it's running; it just runs code. If future runtime-state-per-project features land, bump to `version: 2`.
 - **No `ts` / timestamp.** Cache-busting is the editor's job (`iframe.src = 'runtime/runner.html?t=' + Date.now()`), not the payload's.
 - **No runtime flags** (debug mode, headless, etc.). Add with a version bump when a real use case appears.
+- **No canvas dimensions.** Canvas size is a Love2D-level concern, configured by the project via `conf.lua` (Love2D's standard config mechanism — see https://love2d.org/wiki/Config_Files). The runner does not inject defaults: if a project ships no `conf.lua`, Love2D falls back to its own defaults (800×600). The starter fixture ships a 1280×720 (16:9) `conf.lua` so new projects default to a modern aspect ratio. The editor's preview frame fills its container; the canvas inside scales to fit while preserving the framebuffer's intrinsic aspect, letterboxing any slack.
 
 ---
 
