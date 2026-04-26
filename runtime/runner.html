@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Magnetar Runtime</title>
+  <style>
+    /* Minimal, black, fill-iframe. The editor's preview-stage owns the
+       outer framing; this page just hosts the canvas and a status
+       line that Love.js writes loading/error text into. */
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: black;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: system-ui, sans-serif;
+      color: #d1d5db;
+    }
+    #container {
+      margin: 0;
+      border: none;
+      aspect-ratio: 4 / 3;
+      max-width: 100%;
+      max-height: 100%;
+      position: relative;
+    }
+    #canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    #canvas:focus { outline: none; }
+
+    #message-container {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      gap: 10px;
+    }
+    #message { font-size: 13px; opacity: 0.8; }
+    #progress-border {
+      width: 180px;
+      height: 3px;
+      background: #1a1a24;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    #progress-bar {
+      width: 0%;
+      height: 100%;
+      background: #06b6d4;
+      transition: width 120ms ease-out;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="container">
+    <canvas id="canvas" width="800" height="600" tabindex="-1"></canvas>
+    <div id="message-container">
+      <div id="message"></div>
+      <div id="progress-border"><div id="progress-bar"></div></div>
+    </div>
+  </div>
+
+  <!-- Canvas focus + WebGL context plumbing. Copied from v1's
+       Rozenmad scaffold (games/test_a/index.html). This is
+       working-but-unexplained code that solves real Love-in-iframe
+       issues (right-click menu, touch focus, fullscreen focus jumps,
+       WebGL context loss on tab suspend). Don't strip without a
+       concrete reason — these are the kinds of bugs that are hard
+       to debug after the fact. -->
+  <script>
+    var container = document.querySelector("#container");
+    var canvas = document.getElementById("canvas");
+    var progress_bar = document.querySelector("#progress-bar");
+    var complete = false;
+    var Module;
+
+    function setFocus() { window.focus(); canvas.focus(); }
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    canvas.addEventListener("touchstart", () => window.focus());
+    canvas.addEventListener("pointerdown", () => window.focus());
+    document.addEventListener("pointerdown", () => { container.focus(); setFocus(); });
+    for (const key of ["fullscreenchange", "mozfullscreenchange", "webkitfullscreenchange", "msfullscreenchange"]) {
+      if (key in document) document.addEventListener(key, () => setFocus());
+    }
+
+    /* Status + error surface. Love.js calls drawLoadingStatus via
+       Module.setStatus during boot; our runner.js calls drawMessage
+       directly for payload errors. Same element, same visual
+       grammar — "no project loaded" sits where "Downloading..."
+       would. */
+    function drawMessage(text) {
+      document.getElementById('message').textContent = text;
+    }
+    function drawLoadingStatus(text, current_value, total_value) {
+      var ratio = complete ? 1 : 0;
+      if (current_value && total_value) ratio = current_value / total_value;
+      if (ratio >= 1 || text == 'Running...') { complete = true; ratio = 1; }
+      progress_bar.style.width = (ratio * 100) + '%';
+      drawMessage(text);
+    }
+    function onException(exception_message) {
+      canvas.remove();
+      console.error(exception_message);
+      drawMessage('An error has occurred — see console.');
+      if (Module) {
+        Module.setStatus = function(text) {
+          if (text) Module.printErr('[post-exception status] ' + text);
+        };
+      }
+    }
+    window.onerror = function(message) { onException(message); };
+  </script>
+
+  <!-- Our harness: reads the payload, configures Module, kicks Love.js. -->
+  <script src="runner.js"></script>
+
+</body>
+</html>
