@@ -545,6 +545,54 @@ async function bootstrapProject() {
     e.preventDefault();
     runProject();
   });
+
+  /* ---------- Restart button (c5d) ----------
+     Calls runProject() — same operation as Run. The semantic
+     distinction (Run = apply changes, Restart = reset state with
+     current bundle) doesn't exist yet because there's no hot-reload;
+     every Run is already a fresh boot. Keeping Restart as a separate
+     affordance now means it's wired the day the distinction lands,
+     no UI churn. */
+  const restartBtn = document.getElementById('btn-restart');
+  if (restartBtn) {
+    restartBtn.addEventListener('click', () => {
+      runProject();
+    });
+  }
+
+  /* ---------- Fullscreen button (c5d) ----------
+     Targets the iframe (the running game), not the page. W3C
+     Fullscreen API; no Love.js cooperation needed — the canvas's
+     existing CSS fit-rules handle the resize.
+
+     The button toggles. Clicking while already fullscreen exits.
+     We listen for fullscreenchange to keep aria-pressed honest
+     against Esc-to-exit and any other path out of fullscreen we
+     don't initiate ourselves.
+
+     requestFullscreen() returns a Promise that rejects when the
+     browser refuses (no user gesture, permissions policy, etc.).
+     Catching keeps a silent denial from being a small lie — the
+     button visibly fails to toggle, the console says why. */
+  const fullscreenBtn = document.getElementById('btn-fullscreen');
+  if (fullscreenBtn && previewFrame) {
+    fullscreenBtn.addEventListener('click', () => {
+      if (document.fullscreenElement === previewFrame) {
+        document.exitFullscreen().catch((err) => {
+          console.warn('[fullscreen] exit failed:', err);
+        });
+      } else {
+        previewFrame.requestFullscreen().catch((err) => {
+          console.warn('[fullscreen] request failed:', err);
+        });
+      }
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+      const isOurs = document.fullscreenElement === previewFrame;
+      fullscreenBtn.setAttribute('aria-pressed', isOurs ? 'true' : 'false');
+    });
+  }
 })();
 
 /* Dock icon stubs. Click-log only — the panels these icons will
