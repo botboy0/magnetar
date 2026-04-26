@@ -58,7 +58,7 @@
         }
       } catch (e) {
         console.error('[runtime] FS injection failed:', e);
-        drawMessage('Failed to load project files — see console.');
+        fail('Failed to load project files — see console.');
       }
     }],
 
@@ -79,6 +79,65 @@
          "All downloads complete." text, not empty string.) */
       const overlay = document.getElementById('message-container');
       if (overlay) overlay.style.display = 'none';
+
+      /* Tell the editor the engine is up. The editor's preview-strip
+         flips its `t` metric to running optimistically when Run is
+         clicked; this message confirms the boot completed (vs. the
+         editor showing the timer against a still-loading engine).
+
+         See PROTOCOL.md "Runner → editor messages" / magnetar.status. */
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+          type: 'magnetar.status',
+          state: 'running',
+        }, '*');
+      }
+
+      /* Canvas dimensions need a separate reporting path. At this
+         moment (onRuntimeInitialized = Emscripten runtime ready),
+         Love2D hasn't actually run yet — main.lua hasn't been
+         executed, conf.lua hasn't been processed, love.window.setMode
+         hasn't been called. The canvas is still at the HTML default
+         (800×600 from runner.html's <canvas> attributes). Reading
+         dims here would lie.
+
+         ResizeObserver fires when canvas intrinsic dims change, which
+         happens when Love2D applies setMode during boot. First fire
+         = real dimensions. Subsequent fires = mid-run resize calls,
+         which we forward too so the editor stays accurate.
+
+         Note: ResizeObserver tracks border-box (CSS) by default, but
+         we want intrinsic. We read .width/.height directly inside
+         the callback rather than from the observer entry, since
+         intrinsic pixel dims aren't what ResizeObserver natively
+         reports — they're what we care about. The observer just
+         tells us "something changed; re-read." */
+      const canvasEl = document.getElementById('canvas');
+      if (canvasEl && window.parent && window.parent !== window) {
+        let lastW = 0, lastH = 0;
+        const reportCanvas = () => {
+          const w = canvasEl.width | 0;
+          const h = canvasEl.height | 0;
+          if (w === lastW && h === lastH) return;
+          lastW = w;
+          lastH = h;
+          window.parent.postMessage({
+            type: 'magnetar.status',
+            canvas: { width: w, height: h },
+          }, '*');
+        };
+        /* ResizeObserver only fires on CSS-size changes, not intrinsic
+           dim changes. So we also poll briefly during early boot to
+           catch the conf.lua-driven resize, then stop. setInterval
+           guards against the case where Love sets dims to the same
+           CSS size (so ResizeObserver never fires) but different
+           intrinsic resolution. */
+        const pollInterval = setInterval(reportCanvas, 100);
+        setTimeout(() => clearInterval(pollInterval), 3000);
+        if (typeof ResizeObserver !== 'undefined') {
+          new ResizeObserver(reportCanvas).observe(canvasEl);
+        }
+      }
 
       /* Focus-change hooks so Love.js knows when the game has
          window focus (useful for pausing input). Copied from
@@ -143,7 +202,7 @@
     const raw = sessionStorage.getItem(PAYLOAD_KEY);
 
     if (!raw) {
-      drawMessage('No project loaded.');
+      fail('No project loaded.');
       return null;
     }
 
@@ -152,33 +211,33 @@
       parsed = JSON.parse(raw);
     } catch (e) {
       console.error('[runtime] payload is not valid JSON:', e);
-      drawMessage('Payload is corrupt.');
+      fail('Payload is corrupt.');
       return null;
     }
 
     if (!parsed || typeof parsed !== 'object') {
-      drawMessage('Payload is malformed.');
+      fail('Payload is malformed.');
       return null;
     }
 
     if (parsed.version !== SUPPORTED_VERSION) {
       console.error(`[runtime] unsupported payload version: ${parsed.version} (expected ${SUPPORTED_VERSION})`);
-      drawMessage(`Unsupported payload version: ${parsed.version}`);
+      fail(`Unsupported payload version: ${parsed.version}`);
       return null;
     }
 
     if (!parsed.files || typeof parsed.files !== 'object' || Array.isArray(parsed.files)) {
-      drawMessage('Payload is missing files.');
+      fail('Payload is missing files.');
       return null;
     }
 
     if (typeof parsed.entry !== 'string' || !parsed.entry) {
-      drawMessage('Payload is missing entry.');
+      fail('Payload is missing entry.');
       return null;
     }
 
     if (!(parsed.entry in parsed.files)) {
-      drawMessage(`Entry file not found: ${parsed.entry}`);
+      fail(`Entry file not found: ${parsed.entry}`);
       return null;
     }
 
@@ -195,5 +254,20 @@
     }
 
     return parsed;
+  }
+
+  /* Render a message into the runner's overlay AND forward to the
+     editor as a magnetar.error. Used for any runner-side failure
+     the user should see in the editor's status-line. (Runtime
+     exceptions go through onException in runner.html, which has
+     its own forwarding.) */
+  function fail(message) {
+    drawMessage(message);
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({
+        type: 'magnetar.error',
+        message: message,
+      }, '*');
+    }
   }
 })();

@@ -127,6 +127,14 @@
           if (text) Module.printErr('[post-exception status] ' + text);
         };
       }
+      /* Forward to editor so the status-line can surface the error.
+         See PROTOCOL.md "Runner → editor messages" / magnetar.error. */
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+          type: 'magnetar.error',
+          message: String(exception_message),
+        }, '*');
+      }
     }
     window.onerror = function(message) { onException(message); };
 

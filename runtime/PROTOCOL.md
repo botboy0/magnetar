@@ -109,11 +109,10 @@ A second, narrow channel exists for the runner to send signals back up to the ed
 | Type | Payload | Meaning |
 |---|---|---|
 | `magnetar.run` | none | User pressed Ctrl/Cmd+Enter while focused inside the iframe. Editor should run the project. |
+| `magnetar.status` | `{state?, canvas?}` | Engine lifecycle state and/or canvas dimensions. May arrive in two flavors: (1) `{state: 'running'}` when the Emscripten runtime is ready, confirming engine boot for the editor's `t` metric. (2) `{canvas: {width, height}}` when the canvas resolution changes. The runner polls `canvas.width/height` for the first ~3s after engine-ready and re-posts whenever it differs from the previous report. The first such message reflects conf.lua-driven sizing (e.g. 1280×720 default); later messages catch runtime `love.window.setMode` calls. State and canvas may also arrive together — they're independent fields. |
+| `magnetar.error` | `{message}` | Engine reported an error. Posted from `onException` (runtime exceptions) and from payload-validation failures in `runner.js`. The editor shows the first line in the status-line badge; full text remains in the console. |
 
-**Reserved for future use** (do not implement these without a deliberate design pass):
-
-- `magnetar.error` — runtime error surfacing (c5c).
-- `magnetar.status` — runtime lifecycle state (booting/ready/errored, c5c).
+Duration tracking is editor-side, not part of the protocol. The runner doesn't know or care that the editor is showing a `t` metric ticking up — it just signals state transitions. This keeps the runner's responsibilities narrow (signal what happened) and lets the editor decide how to surface them.
 
 ### Modifier-key forwarding policy
 
@@ -145,3 +144,4 @@ The `vendor/` subfolder is the ownership boundary. Anything inside is third-part
 
 - **v1 (c5a)** — initial protocol. `version` + `files` + `entry`. One-shot boot via iframe reload; no hot-reload, no runtime state queries.
 - **c5b3** — added the runner → editor postMessage channel. First message type: `magnetar.run` (Ctrl+Enter inside the iframe). Payload protocol shape is unchanged — this is a separate channel, not a payload version bump.
+- **c5c** — added `magnetar.status` and `magnetar.error` to the runner → editor channel. Promoted from "reserved" to implemented. Drives the editor's status-line lifecycle badge. No payload protocol change.

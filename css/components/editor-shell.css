@@ -378,6 +378,17 @@
   background: var(--supernova);
   box-shadow: 0 0 6px var(--supernova);
 }
+/* Idle is the pre-run / cleared state. The mockup didn't include
+   it because the mockup always shows a live engine — but in real
+   use the editor opens before the user has clicked Run, and a blank
+   status-line right side is uglier than a neutral chip. No glow dot:
+   the dot signals activity (running) or attention (errored), and idle
+   has neither. */
+.status-line .badge.idle {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted-2);
+  border: 1px solid var(--muted);
+}
 
 /* ---------- code column ---------- */
 .code-col {

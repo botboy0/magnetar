@@ -306,6 +306,90 @@ async function bootstrapProject() {
   const previewFrame = document.querySelector('.preview-frame');
   const playBtn = document.getElementById('play');
 
+  /* ---------- Runtime status & metrics (c5c) ----------
+     Two separate concerns sharing the same lifecycle events:
+
+       BADGE (.status-line) — stationary state indicator:
+         idle    — pre-run, neutral chip
+         running — engine up, cyan
+         errored — exception or validation failure, orange + first
+                   line of message
+       The badge text doesn't change while in a state; it's a status
+       light, not a counter.
+
+       METRICS (.preview-strip) — live runtime values:
+         t   — elapsed seconds since run started, ticks ~10×/sec
+         fps — runtime frame rate (placeholder — Love.js doesn't
+               expose getFPS through the C ABI we have access to;
+               wiring this needs a `conf.lua` cooperation pattern,
+               deferred)
+         res — actual canvas dimensions reported by the runner once
+               the engine boots (replaces the previous hardcoded
+               "800 × 500" placeholder, which has been wrong since
+               c5b1.5 made canvas size project-controlled via conf.lua)
+
+     Both are driven by the same magnetar.status / magnetar.error
+     messages plus the editor-side optimistic flip on Run. Splitting
+     the rendering targets keeps the badge calm and lets the strip
+     be busy. */
+  const runtimeBadge = document.getElementById('runtime-badge');
+  const metricT = document.getElementById('metric-t');
+  const metricRes = document.getElementById('metric-res');
+  let runStartTime = 0;
+  let runDurationInterval = null;
+
+  function clearRunDurationInterval() {
+    if (runDurationInterval !== null) {
+      clearInterval(runDurationInterval);
+      runDurationInterval = null;
+    }
+  }
+
+  function setRuntimeStatus(state, detail) {
+    if (!runtimeBadge) return;
+
+    /* Badge: stationary state indicator. Three classes, one active. */
+    runtimeBadge.classList.remove('idle', 'ok', 'err');
+    if (state === 'running') {
+      runtimeBadge.classList.add('ok');
+      runtimeBadge.textContent = 'Running';
+    } else if (state === 'errored') {
+      runtimeBadge.classList.add('err');
+      /* Surface only the first line; long messages would bust the
+         status-line layout and the user has the console for details. */
+      const firstLine = (detail || 'Error').split('\n')[0].trim() || 'Error';
+      runtimeBadge.textContent = firstLine;
+    } else {
+      // idle or unknown
+      runtimeBadge.classList.add('idle');
+      runtimeBadge.textContent = 'Idle';
+    }
+
+    /* t metric: ticks while running, em-dash otherwise.
+       100ms tick + 1 decimal: the displayed value changes 10×/sec,
+       and a 100ms tick rate is exactly enough to show each value
+       once. */
+    clearRunDurationInterval();
+    if (state === 'running') {
+      runStartTime = Date.now();
+      const tick = () => {
+        if (!metricT) return;
+        const elapsed = (Date.now() - runStartTime) / 1000;
+        metricT.textContent = `${elapsed.toFixed(1)}s`;
+      };
+      tick(); // immediate render so we don't show stale "—" for 100ms
+      runDurationInterval = setInterval(tick, 100);
+    } else if (metricT) {
+      metricT.textContent = '—';
+    }
+
+    /* res metric: clear on idle/errored. magnetar.status with
+       canvas dims will repopulate when the next run starts. */
+    if (state !== 'running' && metricRes) {
+      metricRes.textContent = '—';
+    }
+  }
+
   function runProject() {
     if (!previewFrame) {
       console.warn('[run] no preview-frame element; aborting');
@@ -345,6 +429,15 @@ async function bootstrapProject() {
     if (previewStage) previewStage.classList.add('running');
     previewFrame.hidden = false;
     previewFrame.src = 'runtime/runner.html?t=' + Date.now();
+
+    /* Optimistic state flip: badge says "running" the moment we
+       trigger the run, before the runner has even loaded. This
+       means a rerun-after-error visibly clears the orange badge
+       immediately rather than waiting ~1s for the engine to boot
+       and post its own magnetar.status. The runner's confirmation
+       message just resets the start time, which is the right
+       behavior — count from when the engine actually came up. */
+    setRuntimeStatus('running');
   }
 
   if (playBtn) {
@@ -394,6 +487,29 @@ async function bootstrapProject() {
     if (!e.data || typeof e.data !== 'object') return;
     if (e.data.type === 'magnetar.run') {
       runProject();
+    } else if (e.data.type === 'magnetar.status') {
+      /* state='running' confirms the engine actually came up. Resets
+         the duration counter so it counts from real engine-ready,
+         not from the click. */
+      if (e.data.state === 'running') {
+        setRuntimeStatus('running');
+      } else if (e.data.state === 'idle') {
+        setRuntimeStatus('idle');
+      }
+      /* canvas dims (optional, may arrive in a separate message
+         with no `state`) populate the `res` metric. The runner polls
+         canvas.width/height for ~3s after engine-ready and posts
+         when it changes — first change is conf.lua-driven, later
+         changes are runtime love.window.setMode calls. */
+      if (e.data.canvas && metricRes) {
+        const w = e.data.canvas.width | 0;
+        const h = e.data.canvas.height | 0;
+        if (w > 0 && h > 0) {
+          metricRes.textContent = `${w} × ${h}`;
+        }
+      }
+    } else if (e.data.type === 'magnetar.error') {
+      setRuntimeStatus('errored', e.data.message);
     }
   });
 
