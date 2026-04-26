@@ -96,6 +96,35 @@ iframe.src = 'runtime/runner.html?t=' + Date.now();
 
 ---
 
+## Runner → editor messages
+
+A second, narrow channel exists for the runner to send signals back up to the editor. Used today only for forwarding modified keystrokes (see below); intended substrate for future cross-frame keybind work and runtime-state surfacing (e.g. error reporting in c5c).
+
+**Mechanism:** `window.parent.postMessage(message, '*')` from inside the iframe. The editor listens on its `window` and filters by `event.source === iframe.contentWindow`. Same-origin guarantees source identity is sufficient — origin checks are not needed.
+
+**Message shape:** plain object with a `type` field. Unknown types are ignored (forward-compat).
+
+**Currently defined types:**
+
+| Type | Payload | Meaning |
+|---|---|---|
+| `magnetar.run` | none | User pressed Ctrl/Cmd+Enter while focused inside the iframe. Editor should run the project. |
+
+**Reserved for future use** (do not implement these without a deliberate design pass):
+
+- `magnetar.error` — runtime error surfacing (c5c).
+- `magnetar.status` — runtime lifecycle state (booting/ready/errored, c5c).
+
+### Modifier-key forwarding policy
+
+The runner's keydown listener forwards modifier-keystrokes (Ctrl/Cmd/Alt + key) up to the editor and lets unmodified keystrokes flow to Love2D as game input. This is the dividing line between "editor controls" and "project input."
+
+Today only Ctrl+Enter is forwarded with a specific message type. When a global-keybinds system lands, this listener is the substrate it'll extend — likely by forwarding all modified keystrokes and letting the editor's keybind dispatcher decide what they mean. The current narrow forward avoids speculative scope.
+
+**Conflicts with Love2D shortcuts:** Ctrl+Enter is Love2D's default fullscreen toggle. Magnetar overrides it: "run" beats "fullscreen." Users wanting fullscreen use the preview-strip's fullscreen button.
+
+---
+
 ## Directory layout
 
 ```
@@ -115,3 +144,4 @@ The `vendor/` subfolder is the ownership boundary. Anything inside is third-part
 ## Change log
 
 - **v1 (c5a)** — initial protocol. `version` + `files` + `entry`. One-shot boot via iframe reload; no hot-reload, no runtime state queries.
+- **c5b3** — added the runner → editor postMessage channel. First message type: `magnetar.run` (Ctrl+Enter inside the iframe). Payload protocol shape is unchanged — this is a separate channel, not a payload version bump.

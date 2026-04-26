@@ -11,7 +11,11 @@
    c4d2 — delete file (modal primitive + trash icon).
    c4d3 — add file, rename file, inline validation.
    c5b1 — Run button wiring: payload assembly + iframe boot.
-   c5b2 will add Ctrl+Enter and multi-file verification.
+   c5b2 — Ctrl+Enter keybinding (Monaco-scoped) for runProject.
+   c5b3 — runner→editor postMessage channel; Ctrl+Enter works
+          even when focus is inside the preview iframe.
+   c5b4 — document-level Ctrl+Enter fallback for editor-frame
+          focus that's outside Monaco (body, dropdown, Run button).
    c5c will wire status badge handling.
    ============================================================ */
 
@@ -346,6 +350,85 @@ async function bootstrapProject() {
   if (playBtn) {
     playBtn.addEventListener('click', runProject);
   }
+
+  /* ---------- Run keybinding (c5b2) ----------
+     Ctrl+Enter / Cmd+Enter inside Monaco runs the project. Same
+     handler as the click — no separate code path to keep in sync.
+
+     Monaco-only by design: addCommand only fires when the editor
+     has focus. That covers the >95% case (user is typing code,
+     hits the shortcut to run). Cases like "user clicked into the
+     iframe and now wants to rerun" need the Run button instead;
+     adding a document-level fallback is one extra binding away if
+     it ever earns its keep, but we're not paying for it speculatively.
+
+     window.monaco is set by editor-mount.js's AMD loader and is
+     guaranteed to exist by the time this IIFE reaches here (we
+     awaited initEditor above). */
+  if (window.monaco) {
+    editor.addCommand(
+      window.monaco.KeyMod.CtrlCmd | window.monaco.KeyCode.Enter,
+      runProject
+    );
+  }
+
+  /* ---------- Runner → editor messages (c5b3) ----------
+     The runner forwards modified keystrokes (today: Ctrl+Enter)
+     up to the parent because keystrokes inside the iframe don't
+     reach Monaco's command system. This listener completes the
+     channel: runner posts {type: 'magnetar.run'}, we run.
+
+     Source validation: only accept messages from our own iframe.
+     postMessage is broadcast — any page can send our window a
+     message. Filtering by source keeps a malicious tab on a
+     different origin from triggering runs. We don't bother
+     checking origin (same-origin guarantees the source check is
+     sufficient).
+
+     Forward-compat: unknown message types are ignored, not
+     errored. New types can be added (e.g. magnetar.error,
+     magnetar.status for c5c) without breaking older runners.
+     See runtime/PROTOCOL.md for the channel spec. */
+  window.addEventListener('message', (e) => {
+    if (!previewFrame || e.source !== previewFrame.contentWindow) return;
+    if (!e.data || typeof e.data !== 'object') return;
+    if (e.data.type === 'magnetar.run') {
+      runProject();
+    }
+  });
+
+  /* ---------- Document-level Ctrl+Enter fallback (c5b4) ----------
+     Catches Ctrl+Enter when focus is in the editor frame but
+     outside Monaco — body, file dropdown, the Run button itself,
+     etc. Without this, those focus states are dead zones for the
+     shortcut, which surprises users who expect "Ctrl+Enter runs"
+     to work everywhere in the editor.
+
+     Layering with the other two run-trigger paths:
+       - Monaco focus → editor.addCommand intercepts before bubble.
+       - Iframe focus → runner postMessage handler fires above.
+       - Anywhere else in the editor frame → this listener.
+     Three paths, one runProject().
+
+     Input guard: skip when focus is inside any text input element,
+     so the project-title rename input's Enter still commits the
+     rename and doesn't double-fire as Run. Monaco's editor uses
+     a contenteditable surface, not <input>/<textarea>, so this
+     guard doesn't accidentally suppress Monaco's case (which is
+     already handled by addCommand anyway).
+
+     When a real keybind dispatcher lands later, this listener is
+     the natural anchor for it — the dispatcher reuses the same
+     insertion point and routes by registered binding instead of
+     hardcoding Ctrl+Enter → run. */
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    if (!(e.ctrlKey || e.metaKey)) return;
+    const ae = document.activeElement;
+    if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
+    e.preventDefault();
+    runProject();
+  });
 })();
 
 /* Dock icon stubs. Click-log only — the panels these icons will

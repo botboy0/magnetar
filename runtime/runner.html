@@ -129,6 +129,40 @@
       }
     }
     window.onerror = function(message) { onException(message); };
+
+    /* ---------- Runner → editor messages (c5b3) ----------
+       The iframe and the editor live in the same origin but are
+       separate documents — keystrokes in the iframe never reach
+       the parent's listeners. This block forwards modifier-keys
+       (Ctrl/Cmd/Alt + something) up to the parent so editor-level
+       shortcuts work even when the user has clicked into the
+       preview.
+
+       Mental model going forward: modified keystrokes belong to
+       the editor (run, save, command palette, etc.), unmodified
+       keystrokes belong to the project (game input). Today only
+       Ctrl+Enter is forwarded with a specific message; when the
+       global-keybinds system lands it'll likely become "forward
+       all modified keystrokes and let the parent decide." Keeping
+       the forward narrow for now — speculative forwarding has its
+       own privacy/UX cost.
+
+       See PROTOCOL.md "Runner → editor messages" for the channel
+       contract and message shapes. */
+    document.addEventListener('keydown', function (e) {
+      /* Ctrl+Enter (or Cmd+Enter on Mac) → run. We eat the event
+         to suppress Love2D's default Ctrl+Enter = fullscreen toggle.
+         "Run" is a Magnetar-level semantic that beats Love2D's
+         engine-level shortcut by design; users wanting fullscreen
+         can use the preview-strip's fullscreen button (c5d). */
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: 'magnetar.run' }, '*');
+        }
+      }
+    });
   </script>
 
   <!-- Our harness: reads the payload, configures Module, kicks Love.js. -->
