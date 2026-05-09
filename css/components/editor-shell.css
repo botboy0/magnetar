@@ -180,7 +180,7 @@
   align-items: center;
   gap: 16px;
   padding: 8px 14px;
-  background: var(--void-3);
+  background: var(--void-2);
   font-family: "Space Mono", monospace;
   font-size: 0.82rem;
   color: var(--muted-2);
@@ -306,7 +306,7 @@
   gap: 16px;
   flex-wrap: wrap;
   padding: 10px 14px;
-  background: var(--void-2);
+  background: var(--void-3);
   border-top: 1px solid var(--muted);
   font-family: "Space Mono", monospace;
   font-size: 0.82rem;
