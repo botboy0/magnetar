@@ -150,3 +150,17 @@ html:has(.games-body)::-webkit-scrollbar {
     opacity: 0.3;
 }
 
+.game-frame {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin: 24px auto;
+}
+
+.game-frame #canvas {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
