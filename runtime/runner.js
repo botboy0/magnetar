@@ -45,6 +45,7 @@
   window.Module = {
     arguments: ['/'],
     canvas: document.getElementById('canvas'),
+    print: function (text) { console.log('[lua]', text); },
     printErr: console.error.bind(console),
 
     preRun: [function () {
@@ -137,6 +138,32 @@
         if (typeof ResizeObserver !== 'undefined') {
           new ResizeObserver(reportCanvas).observe(canvasEl);
         }
+      }
+
+      /* Console helper: lets the editor (or devtools) push arbitrary
+         bytes into a file on the runner's virtual FS. The fixtures
+         that need runtime input (e.g. fixtures/stress polling
+         /stress) read these files each frame. Names are intentionally
+         not validated — the editor is the only caller. */
+      window.magnetarWriteFile = function (path, data) {
+        Module.FS.writeFile(path, String(data));
+      };
+
+      /* FPS poll. magnetar_get_fps is a custom export baked into
+         love.wasm (see magnetar-build/.../magnetar_hooks.cpp); it
+         reads love::timer::Timer's getFPS(). Poll at 2Hz — Love
+         only updates the FPS counter once per second internally,
+         so faster polling is wasted work. Returns -1 before the
+         timer module is initialized; we surface that as no-op. */
+      if (typeof Module._magnetar_get_fps === 'function' &&
+          window.parent && window.parent !== window) {
+        setInterval(() => {
+          const fps = Module._magnetar_get_fps();
+          window.parent.postMessage({
+            type: 'magnetar.status',
+            fps: fps,
+          }, '*');
+        }, 500);
       }
 
       /* Focus-change hooks so Love.js knows when the game has

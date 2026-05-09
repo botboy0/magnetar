@@ -67,13 +67,13 @@ async function bootstrapProject() {
   let starterCode = '-- could not load starter\n';
   let confCode = '-- could not load default conf\n';
   try {
-    const res = await fetch('fixtures/main.lua');
+    const res = await fetch('fixtures/welcome/main.lua');
     if (res.ok) starterCode = await res.text();
   } catch (e) {
     console.warn('[editor] failed to load starter fixture:', e);
   }
   try {
-    const res = await fetch('fixtures/conf.lua');
+    const res = await fetch('fixtures/welcome/conf.lua');
     if (res.ok) confCode = await res.text();
   } catch (e) {
     console.warn('[editor] failed to load default conf:', e);
@@ -335,6 +335,7 @@ async function bootstrapProject() {
   const runtimeBadge = document.getElementById('runtime-badge');
   const metricT = document.getElementById('metric-t');
   const metricRes = document.getElementById('metric-res');
+  const metricFps = document.getElementById('metric-fps');
   let runStartTime = 0;
   let runDurationInterval = null;
 
@@ -387,6 +388,10 @@ async function bootstrapProject() {
        canvas dims will repopulate when the next run starts. */
     if (state !== 'running' && metricRes) {
       metricRes.textContent = '—';
+    }
+
+    if (state !== 'running' && metricFps) {
+      metricFps.textContent = '—';
     }
   }
 
@@ -508,6 +513,9 @@ async function bootstrapProject() {
           metricRes.textContent = `${w} × ${h}`;
         }
       }
+      if (typeof e.data.fps === 'number' && metricFps) {
+        metricFps.textContent = e.data.fps >= 0 ? String(e.data.fps | 0) : '—';
+      }
     } else if (e.data.type === 'magnetar.error') {
       setRuntimeStatus('errored', e.data.message);
     }
@@ -593,6 +601,52 @@ async function bootstrapProject() {
       fullscreenBtn.setAttribute('aria-pressed', isOurs ? 'true' : 'false');
     });
   }
+
+  /* Console helper: load a predefined fixture from fixtures/<name>/.
+     Usage: await magnetar.loadFixture('stress')
+            await magnetar.loadFixture('welcome', { run: false })
+     Overwrites main.lua + conf.lua in the active project, refreshes
+     the Monaco models, persists, and runs (unless run:false). */
+  window.magnetar = window.magnetar || {};
+  /* Console helper: write bytes into the runner's virtual FS.
+     Pairs with runner.js's window.magnetarWriteFile. Fixtures that
+     accept runtime input (e.g. fixtures/stress reads /stress) use
+     this as their input channel.
+     Usage: magnetar.writeFile('/stress', '2000') */
+  window.magnetar.writeFile = function (path, data) {
+    const frame = document.querySelector('.preview-frame');
+    const w = frame && frame.contentWindow;
+    if (!w || typeof w.magnetarWriteFile !== 'function') {
+      throw new Error('runner not ready (run a project first)');
+    }
+    w.magnetarWriteFile(path, data);
+  };
+
+  /* Experimental: skip love.run's per-frame love.timer.sleep(0.001).
+     Engine-side check is in megasource-web/.../callbacks.lua's love.run;
+     it polls /magnetar_full_power each frame. Toggle live; takes effect
+     on the next frame. Off by default each run.
+     Usage: magnetar.setFullPower(true)  // remove the 1ms busy-wait
+            magnetar.setFullPower(false) // restore default behavior */
+  window.magnetar.setFullPower = function (on) {
+    window.magnetar.writeFile('/magnetar_full_power', on ? '1' : '0');
+  };
+
+  window.magnetar.loadFixture = async function loadFixture(name, opts) {
+    const run = !opts || opts.run !== false;
+    for (const f of ['main.lua', 'conf.lua']) {
+      const res = await fetch(`fixtures/${name}/${f}`);
+      if (!res.ok) throw new Error(`fixtures/${name}/${f}: ${res.status}`);
+      const code = await res.text();
+      project.files[f] = code;
+      const model = getModel(f);
+      if (model) model.setValue(code);
+      else createModel(f, code);
+    }
+    if (project.id) saveProject(project.id, project);
+    console.log(`[magnetar] loaded fixture "${name}"`);
+    if (run) runProject();
+  };
 })();
 
 /* Dock icon stubs. Click-log only — the panels these icons will
