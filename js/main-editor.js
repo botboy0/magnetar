@@ -31,6 +31,7 @@ import {
 } from './components/project-storage.js';
 import { initProjectRename } from './components/project-rename.js';
 import { initFileDropdown, refresh as refreshFileDropdown } from './components/file-dropdown.js';
+import { initCodeFooter } from './components/code-footer.js';
 
 initTopStrip();
 
@@ -139,9 +140,22 @@ async function bootstrapProject() {
     if (!model) return;
     project.files[name] = model.getValue();
     saveProject(project.id, project);
+    document.dispatchEvent(new CustomEvent('project:saved'));
   }, 300);
 
-  editor.onDidChangeModelContent(persist);
+  /* Surfaces (code-footer) listen for project:saving / project:saved
+     to drive the autosave indicator. project:saving fires synchronously
+     on every content change; project:saved fires after the debounced
+     write actually completes. */
+  editor.onDidChangeModelContent(() => {
+    document.dispatchEvent(new CustomEvent('project:saving'));
+    persist();
+  });
+
+  /* Code-footer live state — cursor pos, char count, language label.
+     Reads project.activeFile at render time so file switches drive
+     the language update via onDidChangeModel. */
+  initCodeFooter(editor, project);
 
   /* Project-title rename. Display surfaces (topstrip, status-line,
      preview-stage) listen for project:titlechange and update

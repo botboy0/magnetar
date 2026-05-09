@@ -720,18 +720,34 @@
 .code-stage .nm { color: var(--mag-magenta); }
 .code-stage .pn { color: var(--stardust); }
 
-/* code footer — Phase 6 "cursor position + char count" */
+/* code footer — Phase 6 "cursor position + char count".
+   Padding + min-height match .status-line so the two bottom strips
+   read as the same chrome layer. The code-footer has no badge, so
+   without a min-height anchor it naturally rendered ~9px shorter. */
 .code-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 14px;
+  padding: 10px 14px;
+  min-height: 43px;
   background: var(--void-3);
   border-top: 1px solid var(--muted);
   font-family: "Space Mono", monospace;
   font-size: 0.8rem;
   color: var(--muted-2);
   letter-spacing: 0.05em;
+}
+
+.code-footer .left {
+  display: flex;
+  gap: 14px;
+}
+
+/* Hide the separator that precedes the autosave indicator when
+   the indicator itself is empty (idle state) — otherwise a lone
+   `·` dangles after the language label. */
+.code-footer .left > span:has(+ .autosave:empty) {
+  display: none;
 }
 .code-footer .right {
   display: flex;
