@@ -352,12 +352,19 @@ async function bootstrapProject() {
   const metricFps = document.getElementById('metric-fps');
   let runStartTime = 0;
   let runDurationInterval = null;
+  let fpsSuppressUntil = 0;
 
   function clearRunDurationInterval() {
     if (runDurationInterval !== null) {
       clearInterval(runDurationInterval);
       runDurationInterval = null;
     }
+  }
+
+  function tickRunDuration() {
+    if (!metricT) return;
+    const elapsed = (Date.now() - runStartTime) / 1000;
+    metricT.textContent = `${elapsed.toFixed(1)}s`;
   }
 
   function setRuntimeStatus(state, detail) {
@@ -387,13 +394,8 @@ async function bootstrapProject() {
     clearRunDurationInterval();
     if (state === 'running') {
       runStartTime = Date.now();
-      const tick = () => {
-        if (!metricT) return;
-        const elapsed = (Date.now() - runStartTime) / 1000;
-        metricT.textContent = `${elapsed.toFixed(1)}s`;
-      };
-      tick(); // immediate render so we don't show stale "—" for 100ms
-      runDurationInterval = setInterval(tick, 100);
+      tickRunDuration(); // immediate render so we don't show stale "—" for 100ms
+      runDurationInterval = setInterval(tickRunDuration, 100);
     } else if (metricT) {
       metricT.textContent = '—';
     }
@@ -448,6 +450,7 @@ async function bootstrapProject() {
     if (previewStage) previewStage.classList.add('running');
     previewFrame.hidden = false;
     previewFrame.src = 'runtime/runner.html?t=' + Date.now();
+    resetPauseStateForFreshRun();
 
     /* Optimistic state flip: badge says "running" the moment we
        trigger the run, before the runner has even loaded. This
@@ -528,7 +531,15 @@ async function bootstrapProject() {
         }
       }
       if (typeof e.data.fps === 'number' && metricFps) {
-        metricFps.textContent = e.data.fps >= 0 ? String(e.data.fps | 0) : '—';
+        // Two reasons to drop incoming fps updates:
+        //  - Paused: love's getFPS uses a 1s sliding window; with the
+        //    main loop halted, the window empties and reports drops to
+        //    0/1. Hold the pre-pause value instead.
+        //  - Just resumed: the discard step() poisons the window with
+        //    one bogus low sample (giant pause-duration interval).
+        if (!isPaused && Date.now() >= fpsSuppressUntil) {
+          metricFps.textContent = e.data.fps >= 0 ? String(e.data.fps | 0) : '—';
+        }
       }
     } else if (e.data.type === 'magnetar.error') {
       setRuntimeStatus('errored', e.data.message);
@@ -614,6 +625,104 @@ async function bootstrapProject() {
       const isOurs = document.fullscreenElement === previewFrame;
       fullscreenBtn.setAttribute('aria-pressed', isOurs ? 'true' : 'false');
     });
+  }
+
+  /* ---------- Pause button (c7) ----------
+     Engine-level pause. Module.pauseMainLoop halts the wasm main loop;
+     _magnetar_pause stops audio (Web Audio runs on its own thread, so
+     pausing the loop alone wouldn't); _magnetar_resume discards the
+     accumulated wall-clock gap so dt continuity holds across the pause. */
+  const pauseBtn = document.getElementById('btn-pause');
+  let isPaused = false;
+  let pauseStartedAt = 0;
+
+  function setPauseState(paused) {
+    if (!previewFrame || !previewFrame.contentWindow) return;
+    const M = previewFrame.contentWindow.Module;
+    if (!M || typeof M._magnetar_pause !== 'function') return;
+
+    if (paused) {
+      // Audio first, then halt the loop. Reverse order would stop the
+      // runtime before our hook gets a chance to run.
+      M._magnetar_pause();
+      if (typeof M.pauseMainLoop === 'function') M.pauseMainLoop();
+      // Freeze the preview-strip "t" metric so it matches the engine's
+      // frozen clock (love.timer.step's dt is discarded each iteration
+      // during pause). We stop the ticker; runStartTime gets shifted
+      // forward on resume.
+      pauseStartedAt = Date.now();
+      clearRunDurationInterval();
+    } else {
+      // Loop first, then resume. Reverse order means Timer::step runs
+      // while the loop is still halted — works, but one frame imprecise.
+      if (typeof M.resumeMainLoop === 'function') M.resumeMainLoop();
+      M._magnetar_resume();
+      // Shift runStartTime forward by the pause duration so the next
+      // tick reads the same elapsed value the freeze ended on, then
+      // restart the ticker.
+      if (pauseStartedAt) runStartTime += Date.now() - pauseStartedAt;
+      pauseStartedAt = 0;
+      runDurationInterval = setInterval(tickRunDuration, 100);
+      // Suppress fps updates for one love-FPS-window: the discard step()
+      // poisons love's internal 1s sampler, so getFPS() reports a tiny
+      // number until real frames refill the window. Leave the displayed
+      // value as-is during suppression — the pre-pause reading is closer
+      // to truth than the bogus post-resume sample.
+      fpsSuppressUntil = Date.now() + 1500;
+    }
+
+    isPaused = paused;
+    if (pauseBtn) {
+      pauseBtn.setAttribute('aria-pressed', String(paused));
+      pauseBtn.title = paused ? 'Resume' : 'Pause';
+    }
+  }
+
+  /* Auto-pause on tab-out. Without this, browsers throttle
+     requestAnimationFrame to ~1Hz when the tab loses focus, so love.run
+     eventually ticks with a giant dt → physics teleports on tab-back.
+     Routing visibilitychange through setPauseState gives us the proper
+     engine pause (audio + dt-continuity) instead. We track whether the
+     pause was visibility-triggered so we only auto-resume in that case;
+     a manual pause stays held even if the tab loses focus. */
+  let pausedByVisibility = false;
+
+  if (pauseBtn) {
+    pauseBtn.addEventListener('click', () => {
+      pausedByVisibility = false; // a manual click overrides any auto-pause
+      setPauseState(!isPaused);
+    });
+  }
+
+  /* Don't pause if the runner isn't fully booted (Module + our hooks
+     ready). Pausing mid-boot races with FS.syncfs and worker init,
+     which deadlocked the runtime once during testing. */
+  document.addEventListener('visibilitychange', () => {
+    const M = previewFrame?.contentWindow?.Module;
+    const ready = M && typeof M._magnetar_pause === 'function';
+    if (!ready) return;
+
+    if (document.hidden) {
+      if (!isPaused) {
+        pausedByVisibility = true;
+        setPauseState(true);
+      }
+    } else {
+      if (pausedByVisibility) {
+        pausedByVisibility = false;
+        setPauseState(false);
+      }
+    }
+  });
+
+  function resetPauseStateForFreshRun() {
+    isPaused = false;
+    pauseStartedAt = 0;
+    pausedByVisibility = false;
+    if (pauseBtn) {
+      pauseBtn.setAttribute('aria-pressed', 'false');
+      pauseBtn.title = 'Pause';
+    }
   }
 
   /* Console helper: load a predefined fixture from fixtures/<name>/.

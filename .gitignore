@@ -30,10 +30,8 @@ yarn-error.log*
 # VSCode
 /.vscode
 
-# Local dev
-serve.py
-magnetar.log
-magnetar.pid
+# Local dev — scripts (serve.py, deploy.py), logs, and pid files live in .local/
+.local/
 robots.txt
 sitemap.xml
 .well-known/

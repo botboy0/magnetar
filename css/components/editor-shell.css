@@ -210,6 +210,13 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+/* Pause↔Play glyph swap on the pause button. Pause icon shows when not paused;
+   play icon shows when paused (action = "resume"). The pause-glyph SVG uses
+   filled rects, so override fill for that one specifically. */
+#btn-pause .pause-glyph rect { fill: currentColor; stroke: none; }
+#btn-pause .play-glyph { fill: currentColor; stroke: none; display: none; }
+#btn-pause[aria-pressed="true"] .pause-glyph { display: none; }
+#btn-pause[aria-pressed="true"] .play-glyph { display: inline-block; }
 .preview-strip .divider {
   width: 1px;
   height: 20px;
