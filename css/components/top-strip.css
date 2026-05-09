@@ -8,6 +8,10 @@
   top: 0;
   z-index: 30;
   display: flex;
+  /* When the Navigator dropdown is open it grows in-flow; flex-start
+     prevents that growth from stretching the bar itself. The strip
+     stays at chrome height; the dropdown overflows downward. Siblings
+     that don't need to overflow restore center via align-self below. */
   align-items: flex-start;
   gap: 20px;
   padding: 6px 14px;
@@ -20,13 +24,8 @@
   box-shadow: 0 1px 0 rgba(6, 182, 212, 0.08), 0 12px 32px -16px rgba(0, 0, 0, 0.8);
 }
 
-.topstrip .project-bar {
-  align-self: center;
-}
-
-.topstrip .navigator {
-  align-self: flex-start;
-}
+.topstrip .project-bar { align-self: center; }
+.topstrip .navigator   { align-self: flex-start; }
 
 /* ---------- Navigator ---------- */
 .navigator {
@@ -171,24 +170,37 @@
 /* ---------- Project identity bar ---------- */
 .project-bar {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 14px;
   flex: 1;
   min-width: 0;
 }
 
-.project-title {
+.project-title-group {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  cursor: text;
+  padding: 2px 4px;
+  border-radius: 6px;
+  transition: background 0.12s;
+  min-width: 0;
+}
+.project-title-group:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.project-title {
   font-family: "Syne", sans-serif;
   font-weight: 700;
-  font-size: 1.05rem;
+  font-size: 1.1rem;
   color: var(--stardust);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.005em;
+  line-height: 1.1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .project-title.browse-heading {
@@ -203,14 +215,16 @@
 }
 
 .project-pen {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   stroke: var(--muted-2);
   stroke-width: 1.8;
   fill: none;
   cursor: pointer;
   transition: stroke 0.15s;
+  flex-shrink: 0;
 }
+.project-title-group:hover .project-pen,
 .project-pen:hover {
   stroke: var(--mag-cyan);
 }
@@ -228,9 +242,10 @@
 .project-title-input {
   font-family: "Syne", sans-serif;
   font-weight: 700;
-  font-size: 1.05rem;
+  font-size: 1.1rem;
   color: var(--stardust);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.005em;
+  line-height: 1.1;
   white-space: nowrap;
 
   background: transparent;
@@ -248,14 +263,28 @@
 
 .project-caption {
   font-family: "Space Mono", monospace;
-  font-size: 0.7rem;
-  letter-spacing: 0.1em;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--muted-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   white-space: nowrap;
+  flex-shrink: 0;
+  margin-left: auto;
 }
-.project-caption .by {
+.project-caption::before {
+  content: "·";
+  color: var(--muted);
+  letter-spacing: 0;
+}
+.project-caption .by-author {
   color: var(--mag-cyan);
   text-transform: none;
   letter-spacing: 0;
+  cursor: pointer;
+}
+.project-caption .by-author:hover {
+  text-decoration: underline;
 }

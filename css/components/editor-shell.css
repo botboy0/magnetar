@@ -49,11 +49,25 @@
   flex-direction: column;
   background: var(--void);
 }
+
+/* `contain: size` tells the browser the code panel's contents don't
+   determine its own size — Monaco's automaticLayout can no longer
+   inflate the panel's intrinsic height during the editor-shell grid's
+   row-sizing pass. The panel reports zero intrinsic height, so
+   preview-col wins the row size and code-col stretches to match. The
+   panel itself still gets a real size via flex:1 inside code-col, so
+   internal flex layout (header / code-stage / footer) fills exactly
+   without hardcoded offsets. */
+.code-col > .panel {
+  contain: size;
+  flex: 1;
+}
 .panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
+  min-height: 44px;
   background: var(--void-3);
   border-bottom: 1px solid var(--stardust);
   font-family: "Atkinson Hyperlegible", sans-serif;
@@ -674,6 +688,7 @@
    real coloring until Monaco takes over. */
 .code-stage {
   flex: 1;
+  min-height: 0;
   background: var(--void);
   padding: 12px 0 0;
   font-family: "Space Mono", monospace;

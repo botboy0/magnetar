@@ -1,8 +1,9 @@
 @import url(palette.css);
 @import url(fonts.css);
 
-
-
+/* ---------- reset (matches mockup baseline) ---------- */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
 
 
 td {
@@ -44,6 +45,9 @@ body {
     background-color: var(--void);
     color: var(--stardust);
     font-family: Atkinson;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
 }
 
 a {

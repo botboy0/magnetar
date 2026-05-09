@@ -1,0 +1,1715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Magnetar — Editor v2 Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Space+Mono:wght@400;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+<!-- anime.js v4 UMD — drives the Navigator open/close timeline.
+     The opening sequence is a coordinated unfurl (max-height → item bloom
+     → plasma border flare → chevron rotation) that CSS can't express
+     cleanly. The close is a quieter reversal. -->
+<script src="https://cdn.jsdelivr.net/npm/animejs/dist/bundles/anime.umd.min.js"></script>
+<style>
+/*
+  ============================================================
+  MAGNETAR — EDITOR v2 MOCKUP
+  Static HTML/CSS only. No JS logic. Handoff for design review.
+  ============================================================
+
+  NOTES FOR THE DESIGNER:
+  - Palette and fonts come from the existing Magnetar project
+    (css/palette.css, css/fonts.css). Do not change these
+    without discussing with Trynda.
+  - Every panel with a dashed border is a placeholder / stub —
+    asset slots, FPS counter values, compile time, etc.
+  - The six phases from UXreport.md are all represented here
+    as visible structure. Feel free to rearrange / re-weight.
+  - This file is intentionally one big HTML document so you
+    can open it in a browser, inspect, and restyle without
+    any build step.
+*/
+
+/* ---------- palette (mirrors css/palette.css) ---------- */
+:root {
+  --mag-violet: #7c3aed;
+  --mag-cyan:   #06b6d4;
+  --mag-magenta:#c026d3;
+  --supernova: #f97316;
+  --void:      #0a0a0f;
+  --stardust:  #d1d5db;
+
+  /* derived tokens — new for v2 */
+  --void-2:    #12121a;   /* slightly lifted surface */
+  --void-3:    #1a1a24;   /* panel header bar */
+  --muted:     #4a4d57;   /* disabled / placeholder borders */
+  --muted-2:   #6b6e78;   /* secondary text */
+}
+
+/* ---------- reset ---------- */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--void);
+  color: var(--stardust);
+  font-family: "Atkinson Hyperlegible", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+
+  /* subtle starfield — Phase 6 "commits to the space brand" */
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(209,213,219,0.15), transparent),
+    radial-gradient(1px 1px at 70% 80%, rgba(6,182,212,0.2),  transparent),
+    radial-gradient(1px 1px at 40% 60%, rgba(209,213,219,0.1),  transparent),
+    radial-gradient(1px 1px at 90% 20%, rgba(124,58,237,0.2), transparent),
+    radial-gradient(1px 1px at 10% 85%, rgba(209,213,219,0.1), transparent);
+  background-size: 600px 600px;
+  background-attachment: fixed;
+}
+
+/* ---------- top strip: Navigator + project title ---------- */
+/*
+  Pinned to the top edge of the viewport as a full-bleed band. This is
+  architecturally different from the dock: the dock is a peer inside the
+  workspace grid and therefore has no container (tiles don't need a rail
+  to be a dock); the top strip is the page's top edge and therefore
+  *does* need to be one — page edges don't float in void, they terminate
+  against the viewport.
+
+  Option C: bar is full-bleed (edge-to-edge), but its contents respect the
+  same 40px left margin the workspace uses below. Result: the bar reads as
+  page-edge chrome, while Navigator / project identity stay grid-aligned
+  with the dock and editor shell underneath.
+
+  Fill stays var(--void) so the Navigator tile's var(--void-2) surface
+  still lifts cleanly against it. Separation from the workspace is carried
+  by a soft downward shadow — brand-appropriate depth, no hard line.
+*/
+.topstrip {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 6px 14px;
+  margin: 0;
+  min-height: 42px;
+  height: 42px;
+  /* The Navigator's dropdown expands in-flow inside its wrapper, which
+     means the wrapper grows taller when open. We DON'T want that to
+     stretch the strip itself — the strip should stay at its chrome
+     height while the Navigator overflows downward on top of the
+     workspace below. align-items:flex-start + overflow:visible lets
+     the wrapper grow past the strip's bottom edge without resizing
+     the strip itself. The sibling items (project bar) stay vertically
+     centered within the strip's fixed height via explicit alignment. */
+  align-items: flex-start;
+  overflow: visible;
+  /* Fill is a whisper above var(--void) — a hair of elevation so the bar
+     reads as "above" the body. Pure void blends with the body below;
+     var(--void-2) would swallow the Navigator tile. This sits between. */
+  background: #0d0d14;
+  border-bottom: 1px solid var(--muted);
+  /* soft downward glow in brand cyan — commits to the space aesthetic,
+     makes the seam feel like illuminated edge rather than mechanical line */
+  box-shadow: 0 1px 0 rgba(6, 182, 212, 0.08), 0 12px 32px -16px rgba(0, 0, 0, 0.8);
+}
+.topstrip .project-bar {
+  align-self: center;
+}
+.topstrip .navigator {
+  align-self: flex-start;
+}
+
+/* ---------- Navigator tile ---------- */
+/*
+  Reuses the dock's tile grammar: 10px radius, var(--void-2) rest surface,
+  hover lifts to var(--void-3), active adopts the cyan gradient fill + inset
+  cyan border glow. Dimensions differ (holds the wordmark, not a 44x44 icon)
+  but the surface language is the same so clickability transfers.
+
+  Rest → hover → open state progression mirrors .dock-icon exactly.
+  Left-edge accent bar from .dock-icon.active is intentionally dropped: that
+  bar signals "selected item in a rail"; the Navigator isn't in a rail.
+
+  Structure: .navigator is a positioning wrapper. The clickable tile is
+  .navigator-trigger (a real <button> for accessibility and keyboard focus).
+  The dropdown is a sibling inside the wrapper, positioned absolutely.
+*/
+/* ---------- Navigator wrapper ----------
+   The wrapper holds both the trigger tile and the dropdown. The plasma
+   border lives HERE, not on the trigger, so that when .open is set and
+   the dropdown expands downward, the same border extends to wrap the
+   combined shape. "Tile grew down" — one continuous object, one border. */
+.navigator {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  /* Width stays constant through open/close; the dropdown is positioned
+     absolutely so its own width doesn't push the trigger wider. The
+     trigger stays tight to its content; the dropdown appears below at
+     its own min-width. */
+}
+/* Plasma ring on the wrapper. Uses the same mask trick as before but now
+   encloses whatever the wrapper contains — which is tile-height at rest,
+   tile+dropdown-height when .open. The border geometry animates for free
+   because it's following the wrapper's box. */
+.navigator::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 9px;
+  padding: 1px;
+  background: linear-gradient(135deg, #8b5cf6, #06b6d4, #d946ef);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  /* opacity is driven by a CSS custom property so the anime.js open
+     timeline can animate the plasma border's intensity (ignition flare
+     on open). Default value = rest-state opacity. */
+  opacity: var(--nav-border-opacity, 0.45);
+  transition: opacity 0.2s;
+  pointer-events: none;
+  z-index: 1;
+}
+.navigator:hover::before { opacity: 0.8; }
+/* The .open state has its own opacity — set via JS on the custom
+   property — so no explicit rule here. Only register the custom
+   property so animations have a registered type to interpolate. */
+@property --nav-border-opacity {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0.45;
+}
+
+.navigator-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 12px 5px 14px;
+  background: var(--void-2);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, border-radius 0.25s;
+  font-family: inherit;
+  color: inherit;
+  width: 100%;
+  z-index: 2;
+}
+.navigator-trigger:hover {
+  background: var(--void-3);
+}
+.navigator.open .navigator-trigger {
+  /* un-round the bottom so the tile flows seamlessly into the dropdown
+     below — they're the same width now, so this creates one continuous
+     pill shape with rounded top corners (tile) and rounded bottom
+     corners (dropdown) and flat seam where they meet. */
+  border-radius: 8px 8px 0 0;
+  /* subtle cyan tint signals "this part of the shape is the trigger you
+     just clicked" — tile vs dropdown-body distinction within the
+     one-continuous-shape reading. */
+  background: linear-gradient(180deg, rgba(6,182,212,0.12), rgba(6,182,212,0.04));
+}
+
+/* wordmark composition — single-line treatment for use as functional chrome.
+   The full "MAGNETAR / Fused by Löve" composition from CI-GUIDE-v1.html
+   is hero-context; the Navigator is an instrument button where the tagline
+   would just be filling space. Brand statement lives on the landing page,
+   in the gallery, and eventually in the site footer — not here. */
+.navigator-trigger .wordmark {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+.navigator-trigger .wordmark .mag {
+  font-family: "Syne", sans-serif;
+  font-weight: 800;
+  font-size: 1.15rem;
+  letter-spacing: -0.04em;
+  background: linear-gradient(135deg, #8b5cf6, #06b6d4, #d946ef);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* chevron — double-stroke plasma-gradient glyph. Two stacked V's give the
+   gradient enough stroke area to express across (violet → cyan → magenta
+   visible), and the doubled shape carries an "unfurl/expand" energy that a
+   single chevron can't. Rhymes with the plasma wordmark sitting beside it,
+   so the chevron reads as part of the Magnetar object rather than a bolted-on
+   nav widget. Rotates 180° on open. */
+.navigator-trigger .chev {
+  width: 18px;
+  height: 18px;
+  stroke: url(#plasma-chev);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  /* Only opacity transitions via CSS (rest-state hover feedback). The
+     rotation on open/close is driven by anime.js with an overshoot
+     curve that CSS cubic-beziers can't express cleanly. */
+  transition: opacity 0.15s;
+  opacity: 0.7;
+  transform-origin: 50% 50%;
+}
+.navigator-trigger:hover .chev { opacity: 1; }
+.navigator.open .navigator-trigger .chev { opacity: 1; }
+
+/* ---------- Navigator dropdown ---------- */
+/*
+  Sits FLUSH against the tile's bottom edge — no gap — so the plasma border
+  wrapping the navigator wraps both as one continuous shape. Top corners
+  are un-rounded to seam cleanly with the tile's now-flat bottom edge.
+
+  Height animates from 0 → auto using the grid-template-rows 0fr → 1fr
+  trick, which is the one clean pure-CSS way to animate from a collapsed
+  state to intrinsic content height. The content is placed in a grid row
+  whose max-height collapses via overflow:hidden at the outer level.
+*/
+.nav-dropdown {
+  /* In-flow under the trigger so the wrapper grows vertically (plasma
+     border wraps both as one shape). Width matches the trigger's
+     intrinsic width — NO min-width enforcement. This keeps the wrapper
+     from ever growing horizontally; the whole Navigator stays at its
+     rest width throughout open/close. Short labels (Home, Projects)
+     fit comfortably in this width with tighter item padding below. */
+  background: var(--void-2);
+  border: none;
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+  max-height: 0;
+}
+.navigator.open .nav-dropdown {
+  grid-template-rows: 1fr;
+}
+/* inner content wrapper — holds the dropdown's padding and row layout.
+   Kept as a separate element so the outer .nav-dropdown can animate
+   max-height cleanly without interfering with the inner content's
+   natural flow. */
+.nav-dropdown > .nav-dropdown-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px;
+}
+
+.nav-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  color: var(--stardust);
+  font-family: "Atkinson Hyperlegible", sans-serif;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+  /* Initial state for the bloom-in animation: invisible, slightly scaled
+     down, slight negative Y offset. The open-timeline animates these to
+     visible/1/0 with staggered offsets so items materialize sequentially
+     rather than all appearing at once. */
+  opacity: 0;
+  transform: translateY(-4px) scale(0.96);
+  transform-origin: 50% 0%;
+}
+.nav-dropdown-item:hover {
+  background: linear-gradient(180deg, rgba(6,182,212,0.18), rgba(6,182,212,0.08));
+  color: var(--mag-cyan);
+  box-shadow: inset 0 0 0 1px rgba(6,182,212,0.25);
+}
+/* Reference block at the bottom renders .navigator.open statically as
+   designer handoff. anime.js only manages items in .topstrip, so here
+   we override the invisible initial state — reference items always
+   render visible, no animation needed. */
+.reference-expanded .nav-dropdown-item {
+  opacity: 1;
+  transform: none;
+}
+.reference-expanded .nav-dropdown {
+  max-height: none;
+}
+.nav-dropdown-item svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  fill: none;
+  flex-shrink: 0;
+}
+
+/* ---------- project title bar ---------- */
+/*
+  The title is the top of a small identity block, not a lone label.
+  Caption underneath — "A MAGNETAR PROJECT BY <author>" — anchors the
+  title as a headline over something real, the way CodePen's "A PEN BY
+  <author>" does. Without it the title reads as a form value; with it,
+  it reads as a caption for a stated artifact.
+
+  The title + pen icon sit on the top line; caption sits below.
+  Pen icon moves with the title (title-level action, not strip-level).
+  Far-right space stays empty: reserved for future project actions
+  (Fork / Share / Publish).
+*/
+/* ---------- project identity (single-line) ---------- */
+/*
+  Title, pen, and caption all sit on one horizontal line. This is the
+  50px-bar consequence: the stacked two-line identity from the previous
+  pass was a captioned-headline composition (title on top, attribution
+  below); at strip heights under 50px there isn't room for that, so we
+  collapse to an inline reading — title · A MAGNETAR PROJECT BY author.
+  The caption still does its original job of anchoring the title as a
+  named artifact, just as a peer to the title instead of as a subtitle.
+  Pen icon still lives with the title group; far-right space stays empty
+  for future project-level actions (Fork / Share / Publish).
+*/
+.project-bar {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.project-title-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: text;
+  padding: 2px 4px;
+  border-radius: 6px;
+  transition: background 0.12s;
+}
+.project-title-group:hover {
+  background: rgba(255,255,255,0.02);
+}
+.project-title {
+  font-family: "Syne", sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--stardust);
+  letter-spacing: -0.005em;
+  line-height: 1.1;
+}
+.project-edit {
+  width: 13px;
+  height: 13px;
+  stroke: var(--muted-2);
+  stroke-width: 1.8;
+  fill: none;
+  transition: stroke 0.15s;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.project-title-group:hover .project-edit,
+.project-edit:hover {
+  stroke: var(--mag-cyan);
+}
+
+/* caption — sits on the same line now, separated by a subtle dot.
+   Small-caps register ("A MAGNETAR PROJECT BY") in muted dust, author in cyan.
+   Author treatment matches how the status line handles author elsewhere —
+   consolidating a convention rather than inventing one. */
+.project-caption {
+  font-family: "Space Mono", monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.project-caption::before {
+  content: "·";
+  color: var(--muted);
+  letter-spacing: 0;
+}
+.project-caption .by-author {
+  color: var(--mag-cyan);
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+.project-caption .by-author:hover {
+  text-decoration: underline;
+}
+
+/* narrow-screen behavior: caption drops below the title to avoid a crowded
+   single line. The 50px height target is desktop-side; mobile naturally
+   reads a small stacked block. */
+@media (max-width: 1100px) {
+  .topstrip {
+    padding: 8px 14px;
+    gap: 14px;
+  }
+  .project-bar {
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    row-gap: 2px;
+  }
+  .project-title { font-size: 1rem; }
+  .project-caption { font-size: 0.6rem; }
+  .project-caption::before { display: none; }
+}
+
+/* ---------- workspace layout ---------- */
+/*
+  Workspace is the outer shell: dock on the left + editor shell on the right.
+  Dock is a vertical "apps dock" of 5 icons — always visible, no collapse.
+  Philosophy: every icon earns its slot. First-run users see five recognizable
+  tool icons, narrow strip, zero forced interaction. Opposite of Blender's
+  panel firehose; kin to Discord's or VS Code's icon rails.
+*/
+.workspace {
+  display: flex;
+  align-items: stretch;
+  margin: 24px 14px 30px;
+  gap: 16px;
+}
+@media (max-width: 1100px) {
+  .workspace { flex-direction: column; margin: 16px 14px 30px; }
+}
+
+/* vertical dock — 5 icons, per-icon tiles, no container chrome */
+/*
+  The dock itself is not a container — no border, no background, no panel.
+  Each icon is its own tile (subtle filled rounded square) that reads as
+  "an app" on its own. Five tiles stacked read as a dock; removing the
+  outer container avoids the "stapled to the top of an empty rail" feel
+  that a bordered rail had before.
+*/
+.dock {
+  flex: 0 0 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  gap: 6px;
+  align-self: flex-start; /* dock is as tall as its icons, no more */
+}
+.dock-icon {
+  position: relative;
+  width: 44px; height: 44px;
+  background: var(--void-2);
+  border: none;
+  color: var(--muted-2);
+  cursor: pointer;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s, transform 0.1s;
+  z-index: 20;
+}
+.dock-icon svg { width: 20px; height: 20px; }
+.dock-icon:hover {
+  color: var(--stardust);
+  background: var(--void-3);
+  transform: translateY(-1px);
+}
+/* active state — the panel this icon opens is currently visible in sidebar */
+.dock-icon.active {
+  color: var(--mag-cyan);
+  background:
+    linear-gradient(180deg, rgba(6,182,212,0.18), rgba(6,182,212,0.08));
+  box-shadow:
+    inset 0 0 0 1px rgba(6,182,212,0.35),
+    0 0 12px rgba(6,182,212,0.18);
+}
+.dock-icon.active::before {
+  content: "";
+  position: absolute;
+  left: -8px;
+  top: 10px; bottom: 10px;
+  width: 3px;
+  background: var(--mag-cyan);
+  border-radius: 0 2px 2px 0;
+  box-shadow: 0 0 8px var(--mag-cyan);
+}
+
+/* hover label — appears to the right of the icon on hover */
+.dock-icon .dock-label {
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--void-3);
+  color: var(--stardust);
+  font-family: "Space Mono", monospace;
+  font-size: 0.72rem;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--muted);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  z-index: 100;
+}
+.dock-icon:hover .dock-label { opacity: 1; }
+
+/* horizontal dock on narrow screens */
+@media (max-width: 1100px) {
+  .dock {
+    flex: 0 0 auto;
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 0;
+    gap: 6px;
+    align-self: flex-start;
+  }
+  .dock-icon.active::before {
+    left: 10px; right: 10px; top: auto; bottom: -8px;
+    width: auto; height: 3px;
+    border-radius: 2px 2px 0 0;
+  }
+  .dock-icon .dock-label {
+    left: 50%;
+    top: calc(100% + 8px);
+    transform: translateX(-50%);
+  }
+}
+
+/* ---------- main grid ---------- */
+/*
+  Phase 1: preview is the hero. 3fr / 2fr favoring preview.
+  On narrower screens it stacks.
+*/
+.editor-shell {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 20px;
+}
+@media (max-width: 1100px) {
+  .editor-shell { grid-template-columns: 1fr; }
+}
+
+/* ---------- panel scaffold ---------- */
+.panel {
+  border: 1px solid var(--stardust);
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--void);
+}
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--void-3);
+  border-bottom: 1px solid var(--stardust);
+  font-family: "Atkinson Hyperlegible", sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+.panel-header .label {
+  display: flex; align-items: center; gap: 10px;
+}
+.panel-header .label::before {
+  content: "";
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--mag-cyan);
+}
+.panel-header .actions {
+  display: flex; gap: 10px; align-items: center;
+}
+
+/* ---------- preview column ---------- */
+.preview-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* preview canvas — Phase 1 "preview is the hero" */
+.preview-stage {
+  aspect-ratio: 16 / 10;
+  background:
+    radial-gradient(ellipse at center, rgba(124,58,237,0.12) 0%, transparent 60%),
+    linear-gradient(180deg, #0e0e16 0%, #05050a 100%);
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--stardust);
+}
+/* placeholder circles — mimicking the fixture's running visual */
+.preview-stage .shape {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(0.5px);
+  box-shadow: 0 0 40px currentColor;
+  opacity: 0.9;
+}
+.preview-stage .shape.v { background: var(--mag-violet); color: var(--mag-violet); }
+.preview-stage .shape.c { background: var(--mag-cyan);   color: var(--mag-cyan); }
+.preview-stage .shape.m { background: var(--mag-magenta); color: var(--mag-magenta); }
+.preview-stage .shape.s { background: var(--supernova);  color: var(--supernova); }
+
+.preview-stage .hud {
+  position: absolute;
+  top: 12px; left: 14px;
+  font-family: "Space Mono", monospace;
+  font-size: 0.72rem;
+  color: rgba(209,213,219,0.6);
+  pointer-events: none;
+}
+
+/* preview control strip — Phase 1 + 2 (the single biggest win) */
+.preview-strip {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 14px;
+  background: var(--void-3);
+  font-family: "Space Mono", monospace;
+  font-size: 0.82rem;
+  color: var(--muted-2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.preview-strip .btn-icon {
+  width: 26px; height: 26px;
+  border: none;
+  background: transparent;
+  color: var(--stardust);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+.preview-strip .btn-icon:hover { background: rgba(255,255,255,0.06); }
+.preview-strip .btn-icon svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.preview-strip .divider {
+  width: 1px; height: 20px;
+  background: var(--muted);
+}
+
+/* Run lives inside the strip — primary action, same household as the preview it drives */
+.preview-strip .btn-run-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 10px;
+  background: var(--mag-cyan);
+  color: var(--void);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Syne", sans-serif;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: 0 0 12px rgba(6,182,212,0.35);
+  transition: box-shadow 0.2s, transform 0.08s;
+}
+.preview-strip .btn-run-inline:hover {
+  box-shadow: 0 0 20px rgba(6,182,212,0.55);
+}
+.preview-strip .btn-run-inline:active {
+  transform: translateY(1px);
+}
+.preview-strip .btn-run-inline .play-glyph {
+  width: 10px; height: 10px;
+  fill: var(--void);
+  stroke: none;
+}
+
+/* Fork — co-primary, peer to Run. Supernova accent per CI guide (CTA / Highlights). */
+.preview-strip .btn-fork-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 10px;
+  background: var(--supernova);
+  color: var(--void);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Syne", sans-serif;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: 0 0 12px rgba(249,115,22,0.35);
+  transition: box-shadow 0.2s, transform 0.08s;
+}
+.preview-strip .btn-fork-inline:hover {
+  box-shadow: 0 0 20px rgba(249,115,22,0.55);
+}
+.preview-strip .btn-fork-inline:active {
+  transform: translateY(1px);
+}
+.preview-strip .btn-fork-inline .fork-glyph {
+  width: 12px; height: 12px;
+  stroke: var(--void);
+  fill: none;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.preview-strip .metric {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+}
+.preview-strip .metric .k { color: var(--muted); }
+.preview-strip .metric .v { color: var(--stardust); }
+.preview-strip .metric .v.good { color: var(--mag-cyan); }
+.preview-strip .spacer { flex: 1; }
+
+/*
+  Unified metadata bar under the preview.
+  Left: artifact identity (fixture, author, tags) — the "what is this"
+  Right: runtime status (compile badge, engine versions) — the "what's it doing"
+  One visual grammar, one horizontal line, no disjointed second strip below.
+*/
+.status-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background: var(--void-2);
+  border-top: 1px solid var(--muted);
+  font-family: "Space Mono", monospace;
+  font-size: 0.82rem;
+}
+.status-line .left,
+.status-line .right {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+/*
+  Space Mono compensation — the font's line-box has an over-allocated ascender,
+  which shifts visible glyph ink below the geometric center of a flex row by
+  ~1.37px at 0.82rem. Hyphens and lowercase x-height letters are worst affected.
+  Middots (·) sit higher in the em-box naturally, closer to center, so they
+  don't need this shift — they're explicitly excluded. The badge has its own
+  pill-contained centering and is also excluded.
+*/
+.status-line .left > *:not(.meta-sep),
+.status-line .right > *:not(.badge):not(.meta-sep) {
+  position: relative;
+  top: -0.12em;
+}
+/*
+  Meta-seps that live inside a compensated container (.runtime-v) would ride
+  their parent's -0.12em lift. Counter-compensate them back to natural position
+  so they match the bar's other middots.
+*/
+.status-line .runtime-v .meta-sep {
+  position: relative;
+  top: 0.12em;
+}
+.status-line .meta-title {
+  color: var(--stardust);
+  font-size: 0.82rem;
+}
+.status-line .meta-dim { color: var(--muted-2); }
+.status-line .meta-author {
+  color: var(--mag-cyan);
+  cursor: pointer;
+}
+.status-line .meta-author:hover { text-decoration: underline; }
+.status-line .meta-sep { color: var(--muted); }
+.status-line .meta-tag {
+  color: var(--mag-violet);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.status-line .meta-tag:hover { color: var(--mag-magenta); }
+.status-line .runtime-v { color: var(--muted-2); }
+
+.status-line .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.status-line .badge.ok {
+  background: rgba(6,182,212,0.12);
+  color: var(--mag-cyan);
+  border: 1px solid rgba(6,182,212,0.3);
+}
+.status-line .badge.ok::before {
+  content: ""; width: 5px; height: 5px; border-radius: 50%;
+  background: var(--mag-cyan);
+  box-shadow: 0 0 6px var(--mag-cyan);
+}
+/* variant: error state — swap .ok → .err on the badge to preview */
+.status-line .badge.err {
+  background: rgba(249,115,22,0.12);
+  color: var(--supernova);
+  border: 1px solid rgba(249,115,22,0.3);
+}
+.status-line .badge.err::before {
+  content: ""; width: 5px; height: 5px; border-radius: 50%;
+  background: var(--supernova);
+  box-shadow: 0 0 6px var(--supernova);
+}
+
+/* ---------- code column ---------- */
+.code-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+/* fixture dropdown in code header — Phase 4 */
+.fixture-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--muted);
+  color: var(--stardust);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-family: "Space Mono", monospace;
+  font-size: 0.7rem;
+  cursor: pointer;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.fixture-select:hover { border-color: var(--mag-cyan); color: var(--mag-cyan); }
+.fixture-select .caret { color: var(--muted-2); }
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--muted);
+  color: var(--muted-2);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-family: "Space Mono", monospace;
+  font-size: 0.7rem;
+  cursor: pointer;
+  letter-spacing: 0;
+  text-transform: none;
+  transition: all 0.15s;
+}
+.btn-ghost:hover { border-color: var(--mag-cyan); color: var(--mag-cyan); }
+
+/* the code "editor" — just styled text that mimics Monaco */
+.code-stage {
+  flex: 1;
+  background: var(--void);
+  padding: 12px 0 0;
+  font-family: "Space Mono", monospace;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  overflow: hidden;
+  position: relative;
+  min-height: 420px;
+}
+.code-stage pre {
+  margin: 0;
+  padding: 0 14px 14px;
+  white-space: pre;
+  overflow-x: auto;
+}
+.code-stage .ln {
+  display: inline-block;
+  width: 2.2em;
+  text-align: right;
+  color: var(--muted);
+  padding-right: 1em;
+  user-select: none;
+}
+.code-stage .ln.active { color: var(--stardust); }
+/* fake syntax highlighting, roughly Magnetar-palette-aware */
+.code-stage .cm { color: var(--muted-2); font-style: italic; }
+.code-stage .kw { color: var(--mag-violet); }
+.code-stage .fn { color: var(--mag-cyan); }
+.code-stage .st { color: var(--supernova); }
+.code-stage .nm { color: var(--mag-magenta); }
+.code-stage .pn { color: var(--stardust); }
+
+/* code footer — Phase 6 "cursor position + char count" */
+.code-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  background: var(--void-3);
+  border-top: 1px solid var(--muted);
+  font-family: "Space Mono", monospace;
+  font-size: 0.8rem;
+  color: var(--muted-2);
+  letter-spacing: 0.05em;
+}
+.code-footer .right { display: flex; gap: 14px; }
+
+/* ---------- reference: expanded asset rail (designer handoff only) ---------- */
+/*
+  This block shows the EXPANDED state of the asset rail. It is rendered
+  statically below the main mockup purely so the designer can see both
+  states on one page. In the real product, the expanded rail replaces
+  the collapsed rail in place when the user clicks the icon.
+*/
+.reference-expanded {
+  margin: 60px 14px 30px;
+  padding-top: 30px;
+  border-top: 1px dashed var(--muted);
+}
+.reference-expanded .ref-label {
+  font-family: "Space Mono", monospace;
+  font-size: 0.7rem;
+  color: var(--muted-2);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 14px;
+}
+
+.expanded-rail {
+  width: 280px;
+  border: 1px solid var(--stardust);
+  border-radius: 10px;
+  background: var(--void);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.expanded-rail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--void-3);
+  border-bottom: 1px solid var(--stardust);
+  font-family: "Syne", sans-serif;
+  font-weight: 700;
+  font-size: 0.88rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.rail-collapse {
+  background: transparent;
+  border: 1px solid var(--muted);
+  color: var(--muted-2);
+  width: 22px; height: 22px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Space Mono", monospace;
+  line-height: 1;
+  padding: 0;
+}
+.rail-collapse:hover { color: var(--stardust); border-color: var(--stardust); }
+
+.expanded-rail-search {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--muted);
+}
+.expanded-rail-search input {
+  width: 100%;
+  background: var(--void-2);
+  border: 1px solid var(--muted);
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-family: "Space Mono", monospace;
+  font-size: 0.75rem;
+  color: var(--stardust);
+  outline: none;
+}
+.expanded-rail-search input::placeholder { color: var(--muted); }
+
+.expanded-rail-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--muted);
+  background: var(--void-2);
+}
+.rail-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 10px 6px;
+  font-family: "Space Mono", monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+  cursor: pointer;
+  position: relative;
+}
+.rail-tab:hover { color: var(--stardust); }
+.rail-tab.active { color: var(--stardust); }
+.rail-tab.active::after {
+  content: "";
+  position: absolute;
+  left: 18%; right: 18%; bottom: 0;
+  height: 2px;
+  background: var(--mag-cyan);
+  box-shadow: 0 0 6px var(--mag-cyan);
+}
+
+.asset-group {
+  border-bottom: 1px solid var(--muted);
+  padding: 8px 0;
+}
+.asset-group-header {
+  padding: 4px 14px 6px;
+  font-family: "Space Mono", monospace;
+  font-size: 0.7rem;
+  color: var(--muted-2);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.asset-group-header .caret {
+  color: var(--muted);
+}
+.asset-group-header .count {
+  margin-left: auto;
+  color: var(--muted);
+}
+
+.asset-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  cursor: grab;
+  transition: background 0.15s;
+}
+.asset-row:hover {
+  background: rgba(6,182,212,0.06);
+}
+.asset-thumb {
+  width: 32px; height: 32px;
+  border-radius: 4px;
+  background: var(--void-2);
+  border: 1px solid var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-2);
+  flex-shrink: 0;
+}
+.asset-thumb.sprite { color: var(--mag-violet); }
+.asset-thumb.audio { color: var(--mag-cyan); }
+.asset-thumb.audio svg { width: 24px; height: 12px; }
+.asset-thumb.font {
+  color: var(--supernova);
+  font-family: "Space Mono", monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.asset-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.asset-name {
+  font-family: "Space Mono", monospace;
+  font-size: 0.75rem;
+  color: var(--stardust);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.asset-sub {
+  font-family: "Space Mono", monospace;
+  font-size: 0.65rem;
+  color: var(--muted-2);
+}
+
+.expanded-rail-footer {
+  padding: 10px 12px;
+  border-top: 1px solid var(--muted);
+  background: var(--void-2);
+}
+.rail-add {
+  width: 100%;
+  background: transparent;
+  border: 1px dashed var(--muted);
+  color: var(--muted-2);
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Space Mono", monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  transition: all 0.15s;
+}
+.rail-add:hover {
+  border-color: var(--mag-cyan);
+  color: var(--mag-cyan);
+  border-style: solid;
+}
+
+</style>
+</head>
+<body>
+
+<!-- Shared SVG gradient defs. The plasma gradient (violet → cyan → magenta)
+     is reused by the Navigator chevron. Defined once, referenced by URL
+     from any SVG that wants the Magnetar wordmark-family coloring. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="plasma-chev" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="50%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#d946ef"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<!-- ========== TOP STRIP: Navigator + Project Title ========== -->
+<!--
+  Replaces the old Devlog / Games / Editor navbar. Editor is "create mode" —
+  minimal chrome, single exit via the Navigator. Browse-mode nav (gallery,
+  devlog, about) lives on those pages and eventually in a site footer;
+  it does not belong inside the editor. See handoff §8.
+-->
+<div class="topstrip">
+
+  <!-- Navigator tile — click to open Home / Projects dropdown.
+       Toggle the .open class on the wrapper to preview the open state.
+       Structure: outer wrapper holds the trigger button and the dropdown
+       as siblings (avoids invalid <a> inside <button>); the wrapper's
+       .open class drives both the trigger's active styling and the
+       dropdown's visibility. -->
+  <div class="navigator">
+    <button class="navigator-trigger" aria-haspopup="menu" aria-expanded="false" aria-label="Navigate">
+      <span class="wordmark">
+        <span class="mag">MAGNETAR</span>
+      </span>
+      <svg class="chev" viewBox="0 0 24 24" aria-hidden="true">
+        <polyline points="7 8 12 12 17 8"/>
+        <polyline points="7 14 12 18 17 14"/>
+      </svg>
+    </button>
+
+    <!-- Dropdown — grows downward flush against the tile when .open is set.
+         Inner wrapper is needed for the grid-template-rows height animation
+         trick: the outer .nav-dropdown collapses its row height, the inner
+         element carries the actual padding + gap layout. -->
+    <div class="nav-dropdown" role="menu">
+      <div class="nav-dropdown-inner">
+        <a href="#" class="nav-dropdown-item" role="menuitem">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 11l9-8 9 8"/>
+            <path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/>
+          </svg>
+          <span>Home</span>
+        </a>
+        <a href="#" class="nav-dropdown-item" role="menuitem">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="3" y="4" width="7" height="7" rx="1"/>
+            <rect x="14" y="4" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+          <span>Projects</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Project identity — single-line: title (with pen) + caption inline.
+       The caption ("A MAGNETAR PROJECT BY <author>") is a peer to the
+       title, separated by a subtle dot. Still anchors the title as a
+       named artifact, but as a horizontal companion rather than a
+       subtitle — the bar stays slim enough to feel like chrome, not
+       a content band. Pen icon sits with the title. Far-right space
+       stays empty; reserved for future project actions. -->
+  <div class="project-bar">
+    <div class="project-title-group" title="Click to rename">
+      <span class="project-title">shape-spawner</span>
+      <svg class="project-edit" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 20h9"/>
+        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+      </svg>
+    </div>
+    <div class="project-caption">
+      A Magnetar project by <span class="by-author">trynda</span>
+    </div>
+    <!-- Edit state is a stub; in production the title becomes an inline
+         text input on click, committing on Enter/blur, canceling on Escape. -->
+  </div>
+
+</div>
+
+
+<!-- ========== MAIN EDITOR GRID ========== -->
+<!--
+  Philosophy: collapsed by default. First-run users see preview + code + run.
+  The asset rail is a quiet single icon on the far left until clicked.
+  This is a deliberate move away from the Unity/Blender "panel firehose" problem
+  for FOSS creative tools — earn complexity as the user grows into it.
+-->
+<div class="workspace">
+
+  <!-- ===== DOCK (vertical apps dock, always visible) ===== -->
+  <!--
+    Five icons, top to bottom: Blueprints, Assets, Plugins, Output, Export.
+    Each icon opens its own panel into the sidebar space. Click again to close.
+    No chevron, no trigger, no expand state — the dock IS the icons.
+    Principle: each icon earns its slot. Settings, Docs, Share, Sketches
+    were all considered and rejected as aspirational chrome or misplaced.
+  -->
+  <aside class="dock" aria-label="Tools">
+    <button class="dock-icon" title="Blueprints — your .magnetar files (scenes, entities, configs)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+        <path d="M3 5a2 2 0 0 1 2-2h10l5 5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="14 3 14 9 20 9"/>
+        <line x1="8" y1="13" x2="16" y2="13"/>
+        <line x1="8" y1="17" x2="13" y2="17"/>
+      </svg>
+      <span class="dock-label">Blueprints</span>
+    </button>
+    <button class="dock-icon active" title="Assets — sprites, audio, fonts">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+        <rect x="3" y="3" width="7" height="7" rx="1"/>
+        <rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/>
+        <rect x="14" y="14" width="7" height="7" rx="1"/>
+      </svg>
+      <span class="dock-label">Assets</span>
+    </button>
+    <button class="dock-icon" title="Plugins — editor extensions & community plugins">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L8.61 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 8.61a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68l1.683-1.682a2.414 2.414 0 0 1 3.414 0z"/>
+      </svg>
+      <span class="dock-label">Plugins</span>
+    </button>
+    <button class="dock-icon" title="Output — debug output, print, stack traces">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+        <rect x="3" y="4" width="18" height="16" rx="2"/>
+        <polyline points="7 10 10 13 7 16"/>
+        <line x1="13" y1="16" x2="17" y2="16"/>
+      </svg>
+      <span class="dock-label">Output</span>
+    </button>
+    <button class="dock-icon" title="Export — package & download your work">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+        <path d="M12 3v12"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/>
+      </svg>
+      <span class="dock-label">Export</span>
+    </button>
+  </aside>
+
+  <!-- ===== EDITOR SHELL (preview + code) ===== -->
+<main class="editor-shell">
+
+  <!-- ===== PREVIEW COLUMN (the hero) ===== -->
+  <section class="preview-col">
+    <div class="panel">
+      <div class="panel-header">
+        <div class="label">Preview</div>
+      </div>
+
+      <!-- preview stage with placeholder shapes -->
+      <div class="preview-stage">
+        <div class="hud">shapes: 8<br>click to spawn / space to clear</div>
+        <div class="shape v" style="width:52px;height:52px;top:38%;left:22%"></div>
+        <div class="shape c" style="width:38px;height:38px;top:55%;left:35%"></div>
+        <div class="shape m" style="width:46px;height:46px;top:28%;left:48%"></div>
+        <div class="shape s" style="width:30px;height:30px;top:60%;left:58%"></div>
+        <div class="shape v" style="width:34px;height:34px;top:20%;left:72%"></div>
+        <div class="shape m" style="width:42px;height:42px;top:70%;left:78%"></div>
+        <div class="shape c" style="width:28px;height:28px;top:45%;left:85%"></div>
+        <div class="shape s" style="width:36px;height:36px;top:75%;left:14%"></div>
+      </div>
+
+      <!-- Phase 1+2: control strip. Run lives here — pressing it IS what starts the preview. -->
+      <div class="preview-strip">
+        <button class="btn-run-inline" title="Run (⌘↵)">
+          <svg viewBox="0 0 24 24" class="play-glyph" xmlns="http://www.w3.org/2000/svg"><path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/></svg>
+          <span class="run-label">Run</span>
+        </button>
+        <button class="btn-fork-inline" title="Fork this project">
+          <svg viewBox="0 0 24 24" class="fork-glyph" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><path d="M18 9v2c0 .6-.4 1-1 1H7c-.6 0-1-.4-1-1V9"/><path d="M12 12v3"/></svg>
+          <span class="fork-label">Fork</span>
+        </button>
+        <span class="divider"></span>
+        <button class="btn-icon" title="Restart">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        </button>
+        <button class="btn-icon" title="Pause">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="14" y="3" width="5" height="18" rx="1"/><rect x="5" y="3" width="5" height="18" rx="1"/></svg>
+        </button>
+        <span class="divider"></span>
+        <span class="metric"><span class="k">t</span><span class="v">2.14</span></span>
+        <span class="metric"><span class="k">fps</span><span class="v good">60.0</span></span>
+        <span class="metric"><span class="k">res</span><span class="v">800 × 500</span></span>
+        <span class="spacer"></span>
+        <button class="btn-icon" title="Mute">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><line x1="22" x2="16" y1="9" y2="15"/><line x1="16" x2="22" y1="9" y2="15"/></svg>
+        </button>
+        <button class="btn-icon" title="Fullscreen">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M15 3h6v6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/><path d="M9 21H3v-6"/></svg>
+        </button>
+      </div>
+
+      <!--
+        Unified metadata bar. Left: artifact identity (fixture, author, tags).
+        Right: runtime status (compile badge + engine versions).
+        Phase 2 + Phase 5 live together — one strip, one visual grammar.
+        Toggle .ok → .err on the badge to preview the Lua error state.
+      -->
+      <div class="status-line">
+        <div class="left">
+          <span class="meta-title">celestial-demo</span>
+          <span class="meta-sep">·</span>
+          <span class="meta-dim">by <span class="meta-author">trynda</span></span>
+          <span class="meta-sep">·</span>
+          <span class="meta-dim">2m ago</span>
+          <span class="meta-sep">·</span>
+          <span class="meta-tag">#starter</span>
+          <span class="meta-tag">#shapes</span>
+          <span class="meta-tag">#tutorial</span>
+        </div>
+        <div class="right">
+          <span class="badge ok">Running · 0.08s</span>
+          <span class="meta-sep">·</span>
+          <span class="runtime-v">love 11.5 <span class="meta-sep">·</span> lua 5.1</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CODE COLUMN ===== -->
+  <section class="code-col">
+    <div class="panel" style="flex:1;">
+      <div class="panel-header">
+        <div class="label">Code</div>
+        <div class="actions">
+          <!-- Phase 4: fixture dropdown -->
+          <button class="fixture-select">hello.lua <span class="caret">▾</span></button>
+        </div>
+      </div>
+
+      <div class="code-stage">
+<pre><span class="ln">1</span><span class="cm">-- Magnetar — welcome fixture</span>
+<span class="ln">2</span><span class="cm">-- Try editing! Ctrl+Enter to run.</span>
+<span class="ln">3</span><span class="cm">--</span>
+<span class="ln">4</span><span class="cm">-- Click anywhere to spawn a shape.</span>
+<span class="ln">5</span><span class="cm">-- Press space to clear. Escape to quit.</span>
+<span class="ln">6</span>
+<span class="ln">7</span><span class="kw">local</span> shapes = {}
+<span class="ln">8</span><span class="kw">local</span> time = <span class="nm">0</span>
+<span class="ln">9</span>
+<span class="ln">10</span><span class="cm">-- Magnetar palette</span>
+<span class="ln">11</span><span class="kw">local</span> palette = {
+<span class="ln">12</span>    {<span class="nm">0.49</span>, <span class="nm">0.23</span>, <span class="nm">0.93</span>},  <span class="cm">-- violet</span>
+<span class="ln">13</span>    {<span class="nm">0.02</span>, <span class="nm">0.71</span>, <span class="nm">0.83</span>},  <span class="cm">-- cyan</span>
+<span class="ln">14</span>    {<span class="nm">0.75</span>, <span class="nm">0.15</span>, <span class="nm">0.83</span>},  <span class="cm">-- magenta</span>
+<span class="ln">15</span>    {<span class="nm">0.98</span>, <span class="nm">0.45</span>, <span class="nm">0.09</span>},  <span class="cm">-- supernova</span>
+<span class="ln">16</span>}
+<span class="ln">17</span>
+<span class="ln active">18</span><span class="kw">function</span> <span class="fn">love.load</span>()
+<span class="ln">19</span>    <span class="fn">love.graphics.setBackgroundColor</span>(<span class="nm">0.04</span>, <span class="nm">0.04</span>, <span class="nm">0.06</span>)
+<span class="ln">20</span>    <span class="fn">math.randomseed</span>(<span class="fn">os.time</span>())
+<span class="ln">21</span>
+<span class="ln">22</span>    <span class="cm">-- start with a few shapes so it's not empty</span>
+<span class="ln">23</span>    <span class="kw">for</span> i = <span class="nm">1</span>, <span class="nm">8</span> <span class="kw">do</span>
+<span class="ln">24</span>        <span class="fn">spawn</span>(<span class="fn">math.random</span>(<span class="nm">50</span>, <span class="nm">750</span>), <span class="fn">math.random</span>(<span class="nm">50</span>, <span class="nm">550</span>))
+<span class="ln">25</span>    <span class="kw">end</span>
+<span class="ln">26</span><span class="kw">end</span>
+</pre>
+      </div>
+
+      <!-- Phase 6: cursor position + char count in footer -->
+      <div class="code-footer">
+        <div class="left">lua · love2d</div>
+        <div class="right">
+          <span>ln 18, col 1</span>
+          <span>·</span>
+          <span>1870 chars</span>
+          <span>·</span>
+          <span>auto-saved</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+</div><!-- /.workspace -->
+
+<!-- ========== REFERENCE: EXPANDED ASSET RAIL ========== -->
+<!--
+  This panel is NOT part of the real page — it's a designer reference
+  showing what the asset rail looks like when expanded (i.e. after the
+  user clicks the icon in the collapsed rail above). It sits below the
+  main mockup purely so the designer can see both states on one page.
+
+  In the real product this content would slide out in place of the thin
+  rail, pushing the editor shell right by its width (~280px).
+-->
+<section class="reference-expanded" aria-label="Reference: expanded asset rail">
+  <div class="ref-label">↓ Reference: expanded Assets panel (opens to the right of the dock when the Assets icon is active). Each of the other four dock icons — Blueprints, Plugins, Output, Export — opens its own panel of similar shape.</div>
+  <div class="expanded-rail">
+    <div class="expanded-rail-header">
+      <span>Assets</span>
+      <button class="rail-collapse" title="Collapse">‹</button>
+    </div>
+
+    <div class="expanded-rail-search">
+      <input type="text" placeholder="Search assets…" disabled>
+    </div>
+
+    <div class="expanded-rail-tabs">
+      <button class="rail-tab active">Project</button>
+      <button class="rail-tab">Community</button>
+      <button class="rail-tab">Starred</button>
+    </div>
+
+    <!-- Grouped asset list -->
+    <div class="asset-group">
+      <div class="asset-group-header">
+        <span class="caret">▾</span> Sprites <span class="count">3</span>
+      </div>
+      <div class="asset-row">
+        <div class="asset-thumb sprite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+        <div class="asset-info"><span class="asset-name">player.png</span><span class="asset-sub">32 × 32</span></div>
+      </div>
+      <div class="asset-row">
+        <div class="asset-thumb sprite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+        <div class="asset-info"><span class="asset-name">enemy_sheet.png</span><span class="asset-sub">128 × 32 · 4 frames</span></div>
+      </div>
+      <div class="asset-row">
+        <div class="asset-thumb sprite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+        <div class="asset-info"><span class="asset-name">bg_tiles.png</span><span class="asset-sub">256 × 256</span></div>
+      </div>
+    </div>
+
+    <div class="asset-group">
+      <div class="asset-group-header">
+        <span class="caret">▾</span> Audio <span class="count">2</span>
+      </div>
+      <div class="asset-row">
+        <div class="asset-thumb audio">
+          <svg viewBox="0 0 32 16" fill="none" stroke="currentColor" stroke-width="1.2" preserveAspectRatio="none">
+            <polyline points="0 8 3 4 6 10 9 6 12 11 15 5 18 9 21 7 24 10 27 6 30 8 32 8"/>
+          </svg>
+        </div>
+        <div class="asset-info"><span class="asset-name">jump.wav</span><span class="asset-sub">0.4s</span></div>
+      </div>
+      <div class="asset-row">
+        <div class="asset-thumb audio">
+          <svg viewBox="0 0 32 16" fill="none" stroke="currentColor" stroke-width="1.2" preserveAspectRatio="none">
+            <polyline points="0 8 3 5 6 11 9 4 12 10 15 6 18 9 21 7 24 10 27 5 30 8 32 8"/>
+          </svg>
+        </div>
+        <div class="asset-info"><span class="asset-name">theme.ogg</span><span class="asset-sub">1:24</span></div>
+      </div>
+    </div>
+
+    <div class="asset-group">
+      <div class="asset-group-header">
+        <span class="caret">▾</span> Fonts <span class="count">1</span>
+      </div>
+      <div class="asset-row">
+        <div class="asset-thumb font">Aa</div>
+        <div class="asset-info"><span class="asset-name">pixelfont.ttf</span><span class="asset-sub">8px</span></div>
+      </div>
+    </div>
+
+    <div class="expanded-rail-footer">
+      <button class="rail-add">+ Add asset</button>
+    </div>
+  </div>
+</section>
+
+<!-- ========== NAVIGATOR BEHAVIOR (anime.js timeline) ========== -->
+<!--
+  The one high-impact moment of the page: plasma-ignition Navigator open.
+  anime.js v4 runs a coordinated timeline that CSS can't express cleanly.
+
+  Open sequence (total ~420ms):
+    0ms    Panel unfurl begins — max-height 0 → content height, outExpo
+    0ms    Wrapper min-width grows — tight → 160px, outQuart
+    20ms   Chevron rotates 0° → 180° with outBack overshoot (refined,
+           about 4% past target then settles — hint of mechanical snap
+           without cartoony bounce)
+    40ms   Border flare — ::before opacity briefly overshoots to 1, then
+           settles to 0.85 (ignition feel)
+    80ms   Items bloom in, staggered 60ms apart. Each item:
+             opacity 0 → 1, scale 0.96 → 1, translateY -4px → 0
+           outCubic. Particles condensing out of the plasma field.
+
+  Close sequence is deliberately different — not a reverse of open:
+    0ms    Items dim (opacity 1 → 0), no stagger, fast. Panel doesn't
+           wait for items; they dim as the panel collapses.
+    0ms    Panel collapses — current height → 0, inQuad (faster than open)
+    0ms    Chevron rotates back 180° → 0° with outQuad (no overshoot on close)
+    0ms    Wrapper min-width shrinks back
+  Total close time: ~200ms. Closing is quiet; opening earns the attention.
+-->
+<script>
+(function () {
+  const { animate, createTimeline, stagger, utils } = window.anime;
+
+  const navigators = document.querySelectorAll('.topstrip .navigator');
+
+  navigators.forEach(nav => {
+    const trigger = nav.querySelector('.navigator-trigger');
+    const dropdown = nav.querySelector('.nav-dropdown');
+    const inner = nav.querySelector('.nav-dropdown-inner');
+    const items = nav.querySelectorAll('.nav-dropdown-item');
+    const chev = nav.querySelector('.chev');
+    if (!trigger || !dropdown || !inner || !chev) return;
+
+    let isOpen = false;
+    let activeTimeline = null;
+
+    function open() {
+      if (isOpen) return;
+      isOpen = true;
+      nav.classList.add('open');
+      trigger.setAttribute('aria-expanded', 'true');
+
+      // measure target dropdown height (inner's natural height)
+      const targetHeight = inner.offsetHeight;
+
+      // kill any in-flight close timeline
+      if (activeTimeline) activeTimeline.pause();
+
+      const tl = createTimeline({
+        defaults: { ease: 'outQuart' },
+      });
+
+      tl
+        // panel unfurl — the structural motion
+        .add(dropdown, {
+          maxHeight: [0, targetHeight],
+          duration: 360,
+          ease: 'outExpo',
+        }, 0)
+        // chevron rotation with subtle overshoot
+        .add(chev, {
+          rotate: [0, 180],
+          duration: 380,
+          ease: 'outBack(1.4)',
+        }, 20)
+        // plasma border flare — ignition moment. The wrapper's border
+        // wraps the combined tile+dropdown shape; we animate its opacity
+        // to flare past the rest value and settle slightly above it.
+        .add(nav, {
+          '--nav-border-opacity': [
+            { to: 1, duration: 140, ease: 'outQuad' },
+            { to: 0.85, duration: 220, ease: 'outQuart' },
+          ],
+          duration: 360,
+        }, 40)
+        // items bloom, staggered
+        .add(items, {
+          opacity: [0, 1],
+          scale: [0.96, 1],
+          translateY: [-4, 0],
+          duration: 320,
+          ease: 'outCubic',
+          delay: stagger(60),
+        }, 80);
+
+      activeTimeline = tl;
+    }
+
+    function close() {
+      if (!isOpen) return;
+      isOpen = false;
+      trigger.setAttribute('aria-expanded', 'false');
+
+      if (activeTimeline) activeTimeline.pause();
+
+      const tl = createTimeline({
+        defaults: { ease: 'outQuad' },
+        onComplete: () => {
+          // only remove the .open class once the collapse finishes —
+          // otherwise CSS reverts min-width mid-animation and the
+          // wrapper snaps narrow before the dropdown has closed
+          nav.classList.remove('open');
+          // reset items to invisible (CSS default) for next open
+          utils.set(items, { opacity: 0, scale: 0.96, translateY: -4 });
+        },
+      });
+
+      tl
+        .add(items, {
+          opacity: 0,
+          duration: 120,
+        }, 0)
+        .add(dropdown, {
+          maxHeight: 0,
+          duration: 220,
+          ease: 'inQuad',
+        }, 0)
+        .add(chev, {
+          rotate: 0,
+          duration: 240,
+        }, 0)
+        .add(nav, {
+          '--nav-border-opacity': 0.45,
+          duration: 200,
+        }, 0);
+
+      activeTimeline = tl;
+    }
+
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      isOpen ? close() : open();
+    });
+  });
+
+  // click-outside dismiss
+  document.addEventListener('click', (e) => {
+    navigators.forEach(nav => {
+      if (!nav.contains(e.target) && nav.classList.contains('open')) {
+        // dispatch close by synthesizing a click on the trigger — reuses
+        // the close() function in the closure above
+        nav.querySelector('.navigator-trigger').click();
+      }
+    });
+  });
+
+  // escape dismiss
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    navigators.forEach(nav => {
+      if (nav.classList.contains('open')) {
+        nav.querySelector('.navigator-trigger').click();
+      }
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
