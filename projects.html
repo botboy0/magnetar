@@ -1,42 +1,109 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Magnetar - Projects</title>
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="css/components/top-strip.css">
-    <link rel="stylesheet" href="css/components/projects.css">
-    <script src="vendor/anime.umd.min.js"></script>
-    <script type="module" src="js/main-projects.js"></script>
+  <meta charset="UTF-8">
+  <title>Magnetar — Projects</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/components/top-strip.css">
+  <link rel="stylesheet" href="css/components/modal.css">
+  <link rel="stylesheet" href="css/components/projects.css">
+  <script src="vendor/anime.umd.min.js"></script>
+  <script type="module" src="js/main-projects.js"></script>
 </head>
 <body class="projects-body">
 
-    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-      <defs>
-        <linearGradient id="plasma-chev" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#8b5cf6"/>
-          <stop offset="50%" stop-color="#06b6d4"/>
-          <stop offset="100%" stop-color="#d946ef"/>
-        </linearGradient>
-      </defs>
-    </svg>
+  <!-- Shared SVG defs — plasma gradient referenced by id. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <linearGradient id="plasma-chev" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%"   stop-color="#8b5cf6"/>
+        <stop offset="50%"  stop-color="#06b6d4"/>
+        <stop offset="100%" stop-color="#d946ef"/>
+      </linearGradient>
+      <linearGradient id="plus-fill" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse">
+        <stop offset="0%"   stop-color="#8b5cf6"/>
+        <stop offset="43%"  stop-color="#06b6d4"/>
+        <stop offset="57%"  stop-color="#06b6d4"/>
+        <stop offset="100%" stop-color="#d946ef"/>
+      </linearGradient>
+      <mask id="plus-mask">
+        <rect x="10.6" y="2"    width="2.8"  height="20"  fill="#fff"/>
+        <rect x="2"    y="10.6" width="20"   height="2.8" fill="#fff"/>
+      </mask>
+    </defs>
+  </svg>
 
-    <header class="topstrip">
-      <div class="navigator">
-        <button class="navigator-trigger" aria-haspopup="menu" aria-expanded="false" aria-label="Navigate">
-          <span class="wordmark">
-            <span class="mag">MAGNETAR</span>
-          </span>
-          <svg class="chev" viewBox="0 0 24 24" aria-hidden="true">
-            <polyline points="7 8 12 12 17 8"/>
-            <polyline points="7 14 12 18 17 14"/>
-          </svg>
-        </button>
-        <div class="nav-dropdown" role="menu">
-          <div class="nav-dropdown-inner"></div>
-        </div>
+  <header class="topstrip">
+    <div class="navigator">
+      <button class="navigator-trigger" aria-haspopup="menu" aria-expanded="false" aria-label="Navigate">
+        <span class="wordmark">
+          <span class="mag">MAGNETAR</span>
+        </span>
+        <svg class="chev" viewBox="0 0 24 24" aria-hidden="true">
+          <polyline points="7 8 12 12 17 8"/>
+          <polyline points="7 14 12 18 17 14"/>
+        </svg>
+      </button>
+      <div class="nav-dropdown" role="menu">
+        <div class="nav-dropdown-inner"></div>
       </div>
+    </div>
+  </header>
+
+  <main class="page">
+
+    <!-- Masthead: source toggle + search. No h1; the workspace shape
+         tells you where you are. -->
+    <header class="masthead">
+
+      <div class="source-toggle" role="tablist" aria-label="Library source">
+        <button class="tab active" role="tab" aria-selected="true" data-source="yours">
+          <span class="tab-inner">Your projects</span>
+          <span class="tab-underline" aria-hidden="true"></span>
+        </button>
+        <button class="tab" role="tab" aria-selected="false" data-source="examples">
+          <span class="tab-inner">Examples</span>
+          <span class="tab-underline" aria-hidden="true"></span>
+        </button>
+        <button class="tab" role="tab" aria-selected="false" aria-disabled="true" data-source="browse">
+          <span class="tab-inner">
+            Browse
+            <span class="tab-soon">soon</span>
+          </span>
+          <span class="tab-underline" aria-hidden="true"></span>
+        </button>
+      </div>
+
+      <label class="search">
+        <span class="search-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        </span>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search across your projects, examples, and the community"
+          aria-label="Search the library"
+        >
+      </label>
+
     </header>
+
+    <!-- Single grid; contents swap by active source. -->
+    <section class="grid" id="grid">
+      <div class="src src-yours"    data-source="yours"    style="display: contents;"></div>
+      <div class="src src-examples" data-source="examples" style="display: none;"></div>
+      <div class="src src-browse"   data-source="browse"   style="display: none;">
+        <section class="browse-soon">
+          <span class="eyebrow">Browse · soon</span>
+          <h2>The community layer hasn't landed yet</h2>
+          <p>
+            When it does, projects shared by other people will appear here — searchable in the same bar, alongside your work and the bundled examples. Until then, this slot is reserved.
+          </p>
+        </section>
+      </div>
+    </section>
+
+  </main>
 
 </body>
 </html>
