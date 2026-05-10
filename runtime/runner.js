@@ -218,17 +218,17 @@
      wired. */
 
   const s = document.createElement('script');
-  s.src = 'vendor/love.js';
+  s.src = 'love2d/love.js';
   s.onload = function () {
     if (typeof Love !== 'function') {
-      console.error('[runtime] vendor/love.js loaded but Love() is not defined');
+      console.error('[runtime] love2d/love.js loaded but Love() is not defined');
       drawMessage('Runtime failed to initialize.');
       return;
     }
     Love(Module);
   };
   s.onerror = function () {
-    console.error('[runtime] failed to load vendor/love.js');
+    console.error('[runtime] failed to load love2d/love.js');
     drawMessage('Runtime failed to load.');
   };
   document.body.appendChild(s);
