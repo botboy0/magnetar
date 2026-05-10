@@ -4,9 +4,9 @@
 
 -- Controls: Move mouse to steer paddle, click or Space to launch, R to reset.
 
-local W, H = 800, 600
-local COLS, ROWS = 10, 6
-local BW, BH, GAP, TOP = 70, 20, 4, 60
+local W, H = 1280, 720
+local COLS, ROWS = 12, 6
+local BW, BH, GAP, TOP = 96, 24, 6, 80
 local paddle, ball, bricks, state, lives, score
 
 local function resetBricks()
