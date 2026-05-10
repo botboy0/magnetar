@@ -34,8 +34,6 @@ local function resetGame()
 end
 
 function love.load()
-    love.window.setMode(W, H)
-    love.window.setTitle("Breakout")
     resetGame()
 end
 
