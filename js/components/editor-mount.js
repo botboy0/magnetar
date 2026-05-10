@@ -52,14 +52,28 @@ function defineMagnetarTheme(monaco) {
   monaco.editor.defineTheme('magnetar', {
     base: 'vs-dark',
     inherit: true,
-    rules: [],
+    rules: [
+      { token: 'comment',       foreground: '6b7280', fontStyle: 'italic' },
+      { token: 'keyword',       foreground: '8b5cf6' },
+      { token: 'string',        foreground: '06b6d4' },
+      { token: 'string.escape', foreground: '0891b2' },
+      { token: 'number',        foreground: 'd946ef' },
+      { token: 'delimiter',     foreground: 'd1d5db' },
+      { token: 'operator',      foreground: 'd1d5db' },
+    ],
     colors: {
-      'editor.background':                '#0a0a0f',
-      'editor.foreground':                '#d1d5db',
-      'editorLineNumber.foreground':      '#4a4d57',
-      'editorLineNumber.activeForeground':'#d1d5db',
-      'editorCursor.foreground':          '#06b6d4',
-      'editor.lineHighlightBackground':   '#00000000',
+      'editor.background':                  '#0a0a0f',
+      'editor.foreground':                  '#e0e0f0',
+      'editor.selectionBackground':         '#7c3aed44',
+      'editor.selectionHighlightBackground':'#7c3aed22',
+      'editor.lineHighlightBackground':     '#141420',
+      'editorCursor.foreground':            '#8b5cf6',
+      'editorLineNumber.foreground':        '#374151',
+      'editorLineNumber.activeForeground':  '#6b7280',
+      'editorIndentGuide.background':       '#1e1e36',
+      'editorIndentGuide.activeBackground': '#374151',
+      'editorBracketMatch.background':      '#7c3aed33',
+      'editorBracketMatch.border':          '#7c3aed',
     },
   });
   themeDefined = true;
@@ -98,6 +112,7 @@ export async function initEditor(element, { files = {}, activeFile = null } = {}
     scrollbar: { horizontal: 'hidden', verticalScrollbarSize: 8 },
     scrollBeyondLastLine: false,
     wordWrap: 'on',
+    bracketPairColorization: { enabled: false },
   });
 
   /* Force one layout pass after mount. automaticLayout handles

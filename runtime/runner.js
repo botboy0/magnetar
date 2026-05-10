@@ -61,6 +61,19 @@
         console.error('[runtime] FS injection failed:', e);
         fail('Failed to load project files — see console.');
       }
+
+      /* Plant the mute flag before love.boot runs. preRun fires after
+         the wasm is instantiated (so _magnetar_set_muted is callable)
+         but before main(), which is where love.boot creates love.audio.
+         The Audio constructor reads the flag and starts at master gain
+         0, so nothing gets a chance to play through.
+
+         Mid-run toggle clicks go through _magnetar_set_muted directly
+         from the editor — by then love.audio exists and applies the
+         change synchronously. */
+      if (payload.muted && typeof Module._magnetar_set_muted === 'function') {
+        Module._magnetar_set_muted(1);
+      }
     }],
 
     setFocus: typeof setFocus === 'function' ? setFocus : undefined,

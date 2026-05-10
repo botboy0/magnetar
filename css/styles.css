@@ -10,7 +10,7 @@ td {
     border: solid ;
     padding: 10px;
     text-align: left;
-    font-family: Atkinson;
+    font-family: "Atkinson Hyperlegible", sans-serif;
     border-right: none;
     border-bottom: none;
 }
@@ -44,7 +44,7 @@ h2 {
 body {
     background-color: var(--void);
     color: var(--stardust);
-    font-family: Atkinson;
+    font-family: "Atkinson Hyperlegible", sans-serif;
     font-size: 14px;
     line-height: 1.5;
     min-height: 100vh;

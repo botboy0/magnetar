@@ -1,17 +1,72 @@
+/* Local font registration. Family names must match exactly what the
+   rest of the CSS references — the previous declarations used
+   "Space_Mono" / "Atkinson" while every consumer wrote "Space Mono" /
+   "Atkinson Hyperlegible", so the local files never matched and the
+   browser fell through to the OS monospace/sans. The result was the
+   coarse fallback rendering we kept reading as a typography problem. */
+
 @font-face {
-    font-family: "Atkinson";
-    src:
-    url("../assets/fonts/Atkinson_Hyperlegible/AtkinsonHyperlegible-Regular.ttf")
+  font-family: "Atkinson Hyperlegible";
+  src: url("../assets/fonts/Atkinson_Hyperlegible/AtkinsonHyperlegible-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Atkinson Hyperlegible";
+  src: url("../assets/fonts/Atkinson_Hyperlegible/AtkinsonHyperlegible-Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Atkinson Hyperlegible";
+  src: url("../assets/fonts/Atkinson_Hyperlegible/AtkinsonHyperlegible-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Atkinson Hyperlegible";
+  src: url("../assets/fonts/Atkinson_Hyperlegible/AtkinsonHyperlegible-BoldItalic.ttf") format("truetype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
 }
 
 @font-face {
-    font-family: "Syne";
-    src:
-    url("../assets/fonts/Syne/Syne-VariableFont_wght.ttf")
+  font-family: "Syne";
+  src: url("../assets/fonts/Syne/Syne-VariableFont_wght.ttf") format("truetype-variations");
+  font-weight: 400 800;
+  font-style: normal;
+  font-display: swap;
 }
 
 @font-face {
-    font-family: "Space_Mono";
-    src:
-    url("../assets/fonts/Space_Mono/SpaceMono-Regular.ttf")
+  font-family: "Space Mono";
+  src: url("../assets/fonts/Space_Mono/SpaceMono-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Space Mono";
+  src: url("../assets/fonts/Space_Mono/SpaceMono-Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Space Mono";
+  src: url("../assets/fonts/Space_Mono/SpaceMono-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Space Mono";
+  src: url("../assets/fonts/Space_Mono/SpaceMono-BoldItalic.ttf") format("truetype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
 }

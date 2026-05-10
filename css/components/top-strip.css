@@ -272,12 +272,6 @@
   gap: 10px;
   white-space: nowrap;
   flex-shrink: 0;
-  margin-left: auto;
-}
-.project-caption::before {
-  content: "·";
-  color: var(--muted);
-  letter-spacing: 0;
 }
 .project-caption .by-author {
   color: var(--mag-cyan);

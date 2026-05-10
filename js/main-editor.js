@@ -364,17 +364,20 @@ async function bootstrapProject() {
   function tickRunDuration() {
     if (!metricT) return;
     const elapsed = (Date.now() - runStartTime) / 1000;
-    metricT.textContent = `${elapsed.toFixed(1)}s`;
+    metricT.textContent = elapsed.toFixed(1);
   }
 
   function setRuntimeStatus(state, detail) {
     if (!runtimeBadge) return;
 
-    /* Badge: stationary state indicator. Three classes, one active. */
-    runtimeBadge.classList.remove('idle', 'ok', 'err');
+    /* Badge: stationary state indicator. Four classes, one active. */
+    runtimeBadge.classList.remove('idle', 'ok', 'err', 'paused');
     if (state === 'running') {
       runtimeBadge.classList.add('ok');
       runtimeBadge.textContent = 'Running';
+    } else if (state === 'paused') {
+      runtimeBadge.classList.add('paused');
+      runtimeBadge.textContent = 'Paused';
     } else if (state === 'errored') {
       runtimeBadge.classList.add('err');
       /* Surface only the first line; long messages would bust the
@@ -411,6 +414,17 @@ async function bootstrapProject() {
     }
   }
 
+  /* Mute state lives here (above runProject) because the run payload
+     needs to read it on first click. The button wiring that mutates
+     it lives further down with the rest of the toolbar handlers. */
+  let isMuted = false;
+  try {
+    isMuted = localStorage.getItem('magnetar.muted') === '1';
+  } catch (e) {
+    /* localStorage disabled (private mode, quota, etc.) — fall back to
+       in-memory state. The button still works for the current session. */
+  }
+
   function runProject() {
     if (!previewFrame) {
       console.warn('[run] no preview-frame element; aborting');
@@ -435,6 +449,13 @@ async function bootstrapProject() {
       version: 1,
       files,
       entry: 'main.lua',
+      /* Boot-time audio state. The runner applies this once love.audio
+         is up; mid-run toggles go directly through _magnetar_set_muted
+         from the editor (see applyMuteToEngine). Splitting the boot
+         path from the toggle path lets each side own the part it can
+         observe — runner sees the engine come alive, editor owns the
+         user's persisted preference. */
+      muted: isMuted,
     };
 
     try {
@@ -464,6 +485,27 @@ async function bootstrapProject() {
 
   if (playBtn) {
     playBtn.addEventListener('click', runProject);
+  }
+
+  /* ---------- Stop button ----------
+     Full execution halt. Setting the iframe back to about:blank tears
+     down the wasm runtime and audio context — there's no soft-stop
+     hook in love that would leave the engine half-resident. Pair it
+     with the running-class flip on the stage so the preview placeholder
+     reappears, the metrics clear, and pause state resets so the next
+     Run starts from a clean slate. */
+  function stopProject() {
+    if (!previewFrame) return;
+    if (previewStage) previewStage.classList.remove('running');
+    previewFrame.src = 'about:blank';
+    previewFrame.hidden = true;
+    resetPauseStateForFreshRun();
+    setRuntimeStatus('idle');
+  }
+
+  const stopBtn = document.getElementById('btn-stop');
+  if (stopBtn) {
+    stopBtn.addEventListener('click', stopProject);
   }
 
   /* ---------- Run keybinding (c5b2) ----------
@@ -627,6 +669,41 @@ async function bootstrapProject() {
     });
   }
 
+  /* ---------- Mute button ----------
+     Master-volume mute via the C++ hook (love.audio.setVolume(0); sources
+     keep playing, just silent). Persists across sessions in localStorage
+     and is re-applied on every fixture reload, so a fresh Module starts
+     in the user's last-known mute state. */
+  const muteBtn = document.getElementById('btn-mute');
+
+  function reflectMuteUI() {
+    if (!muteBtn) return;
+    muteBtn.setAttribute('aria-pressed', String(isMuted));
+    muteBtn.title = isMuted ? 'Unmute' : 'Mute';
+  }
+
+  /* Apply the current mute state to the running engine. Used for
+     toggle clicks during a live run — by then love.audio is up and
+     the hook applies synchronously. Boot-time mute travels through
+     the run payload (see runProject) and is owned by the runner,
+     which can retry until love.audio exists. */
+  function applyMuteToEngine() {
+    const M = previewFrame && previewFrame.contentWindow && previewFrame.contentWindow.Module;
+    if (!M || typeof M._magnetar_set_muted !== 'function') return;
+    M._magnetar_set_muted(isMuted ? 1 : 0);
+  }
+
+  reflectMuteUI();
+
+  if (muteBtn) {
+    muteBtn.addEventListener('click', () => {
+      isMuted = !isMuted;
+      try { localStorage.setItem('magnetar.muted', isMuted ? '1' : '0'); } catch (e) {}
+      reflectMuteUI();
+      applyMuteToEngine();
+    });
+  }
+
   /* ---------- Pause button (c7) ----------
      Engine-level pause. Module.pauseMainLoop halts the wasm main loop;
      _magnetar_pause stops audio (Web Audio runs on its own thread, so
@@ -675,6 +752,15 @@ async function bootstrapProject() {
     if (pauseBtn) {
       pauseBtn.setAttribute('aria-pressed', String(paused));
       pauseBtn.title = paused ? 'Resume' : 'Pause';
+    }
+    /* Flip the status-line badge directly rather than routing through
+       setRuntimeStatus — the latter clears the t/fps/res metrics for
+       non-running states, but during pause we want the metrics to stay
+       at their frozen values, not blank out. */
+    if (runtimeBadge) {
+      runtimeBadge.classList.remove('idle', 'ok', 'err', 'paused');
+      runtimeBadge.classList.add(paused ? 'paused' : 'ok');
+      runtimeBadge.textContent = paused ? 'Paused' : 'Running';
     }
   }
 
