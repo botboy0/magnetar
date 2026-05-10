@@ -4,6 +4,11 @@
     --mag-cyan:     #06b6d4;   /* secondary */
     --mag-magenta:  #c026d3;   /* tertiary */
 
+    /* Plasma — brighter logo-only triad (wordmark, plus-card, chevron) */
+    --plasma-violet:  #8b5cf6;
+    --plasma-cyan:    #06b6d4;
+    --plasma-magenta: #d946ef;
+
     /* Accents */
     --supernova:    #f97316;   /* highlights */
     --void:         #0a0a0f;   /* dark mode bg */
@@ -12,6 +17,18 @@
     /* Surfaces */
     --void-2:       #12121a;   /* slightly lifted surface */
     --void-3:       #1a1a24;   /* panel header bar */
+    --topstrip-fill:#0d0d14;   /* topstrip background */
     --muted:        #4a4d57;   /* disabled / placeholder borders */
     --muted-2:      #6b6e78;   /* secondary text */
+
+    /* Radii */
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-xl: 10px;
+
+    /* Font families */
+    --font-display: "Syne", system-ui, sans-serif;
+    --font-mono:    "Space Mono", ui-monospace, monospace;
+    --font-body:    "Atkinson Hyperlegible", system-ui, sans-serif;
 }
