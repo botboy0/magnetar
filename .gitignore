@@ -31,7 +31,8 @@ yarn-error.log*
 # VSCode
 /.vscode
 
-# Local dev — scripts (serve.py, deploy.py), logs, and pid files live in .local/
+# Local dev — user-managed scripts in scripts/, runtime artifacts (logs, pids) in .local/
+scripts/
 .local/
 robots.txt
 sitemap.xml
