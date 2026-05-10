@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice">
+  <rect width="320" height="180" fill="#050516"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0a0a2a"/>
+      <stop offset="100%" stop-color="#050516"/>
+    </linearGradient>
+  </defs>
+  <rect width="320" height="180" fill="url(#bg)"/>
+  <!-- brick rows -->
+  <g>
+    <rect x="14"  y="22" width="36" height="12" rx="1" fill="#ef4444"/>
+    <rect x="54"  y="22" width="36" height="12" rx="1" fill="#ef4444"/>
+    <rect x="94"  y="22" width="36" height="12" rx="1" fill="#ef4444"/>
+    <rect x="134" y="22" width="36" height="12" rx="1" fill="#ef4444"/>
+    <rect x="174" y="22" width="36" height="12" rx="1" fill="#ef4444"/>
+    <rect x="214" y="22" width="36" height="12" rx="1" fill="#ef4444"/>
+    <rect x="254" y="22" width="36" height="12" rx="1" fill="#ef4444"/>
+    <rect x="14"  y="38" width="36" height="12" rx="1" fill="#f97316"/>
+    <rect x="54"  y="38" width="36" height="12" rx="1" fill="#f97316"/>
+    <rect x="94"  y="38" width="36" height="12" rx="1" fill="#f97316"/>
+    <rect x="174" y="38" width="36" height="12" rx="1" fill="#f97316"/>
+    <rect x="214" y="38" width="36" height="12" rx="1" fill="#f97316"/>
+    <rect x="254" y="38" width="36" height="12" rx="1" fill="#f97316"/>
+    <rect x="14"  y="54" width="36" height="12" rx="1" fill="#fbbf24"/>
+    <rect x="54"  y="54" width="36" height="12" rx="1" fill="#fbbf24"/>
+    <rect x="174" y="54" width="36" height="12" rx="1" fill="#fbbf24"/>
+    <rect x="214" y="54" width="36" height="12" rx="1" fill="#fbbf24"/>
+    <rect x="254" y="54" width="36" height="12" rx="1" fill="#fbbf24"/>
+    <rect x="14"  y="70" width="36" height="12" rx="1" fill="#22c55e"/>
+    <rect x="214" y="70" width="36" height="12" rx="1" fill="#22c55e"/>
+    <rect x="254" y="70" width="36" height="12" rx="1" fill="#22c55e"/>
+  </g>
+  <!-- ball with trail -->
+  <circle cx="186" cy="118" r="3" fill="#fde68a"/>
+  <circle cx="178" cy="112" r="2.4" fill="#fde68a" opacity="0.55"/>
+  <circle cx="172" cy="106" r="1.8" fill="#fde68a" opacity="0.3"/>
+  <!-- paddle -->
+  <rect x="138" y="148" width="50" height="6" rx="2" fill="#22d3ee"/>
+  <!-- HUD -->
+  <text x="12"  y="172" font-family="'Space Mono', monospace" font-size="9" fill="#22d3ee" letter-spacing="1">SCORE 0210</text>
+  <text x="262" y="172" font-family="'Space Mono', monospace" font-size="9" fill="#fca5a5" letter-spacing="1">LIVES 03</text>
+</svg>

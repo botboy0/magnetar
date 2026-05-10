@@ -1,0 +1,6 @@
+{
+  "title": "breakout",
+  "description": "Bricks, ball, paddle. The hello-world of arcade physics.",
+  "tags": ["arcade", "collisions"],
+  "author": "magnetar"
+}
