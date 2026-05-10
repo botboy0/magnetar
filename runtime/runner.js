@@ -40,7 +40,7 @@
      main.lua at `/`.
 
      arguments: ['/'] tells Love2D to run the project rooted at /.
-     Same as v1's test_a/game.js; the engine expects this. */
+     Same as v1's fixtures/test_a/game.js; the engine expects this. */
 
   window.Module = {
     arguments: ['/'],
