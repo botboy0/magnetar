@@ -6,21 +6,23 @@
    ============================================================ */
 
 const ICONS = {
-  devlog: `<path d="M15 3v18"/><path d="M8 7h4"/><path d="M8 11h4"/><rect x="3" y="3" width="18" height="18" rx="2"/>`,
-  games: `<line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/><rect x="2" y="6" width="20" height="12" rx="2"/>`,
-  editor: `<path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/>`,
+  devlog:   `<path d="M15 3v18"/><path d="M8 7h4"/><path d="M8 11h4"/><rect x="3" y="3" width="18" height="18" rx="2"/>`,
+  projects: `<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>`,
+  editor:   `<path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/>`,
 };
 
 const PAGES = {
-  devlog: { href: 'devlog.html', label: 'Devlog', icon: ICONS.devlog },
-  games:  { href: 'index.html',  label: 'Games',  icon: ICONS.games  },
-  editor: { href: 'editor.html', label: 'Editor', icon: ICONS.editor },
+  devlog:   { href: 'devlog.html',   label: 'Devlog',   icon: ICONS.devlog   },
+  projects: { href: 'projects.html', label: 'Projects', icon: ICONS.projects },
+  editor:   { href: 'editor.html',   label: 'Editor',   icon: ICONS.editor   },
 };
 
 function otherPages() {
   const path = window.location.pathname;
-  if (path.endsWith('editor.html')) return ['devlog', 'games'];
-  if (path.endsWith('devlog.html')) return ['games', 'editor'];
+  if (path.endsWith('editor.html'))   return ['devlog', 'projects'];
+  if (path.endsWith('devlog.html'))   return ['projects', 'editor'];
+  if (path.endsWith('projects.html')) return ['devlog', 'editor'];
+  // Default (root /, index.html redirect target): treat as Projects.
   return ['devlog', 'editor'];
 }
 
