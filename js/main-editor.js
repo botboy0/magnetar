@@ -27,6 +27,7 @@ import {
   loadProject,
   saveProject,
   createProject,
+  uniqueTitle,
   debounce,
 } from './components/project-storage.js';
 import { initProjectRename } from './components/project-rename.js';
@@ -52,6 +53,59 @@ async function fetchFixtureFiles(name) {
   };
 }
 
+/* Fetch a curated example's source + metadata from examples/<name>/.
+   Same file contract as fixtures (main.lua + conf.lua required) plus
+   an optional meta.json carrying title/description/tags/author and
+   an optional thumbnail in any of the supported formats. Description,
+   tags, author, and thumb follow into the user's duplicated project
+   so the Projects-page Yours card and the editor's preview-stage
+   carry the example's identity from minute one — replaced by the
+   user's own captures on next Run. */
+const EXAMPLE_THUMB_EXTS = ['png', 'svg', 'webp', 'jpg', 'jpeg'];
+
+async function fetchExampleFiles(name) {
+  const [mainRes, confRes, metaRes] = await Promise.all([
+    fetch(`examples/${name}/main.lua`),
+    fetch(`examples/${name}/conf.lua`),
+    fetch(`examples/${name}/meta.json`),
+  ]);
+  if (!mainRes.ok || !confRes.ok) {
+    throw new Error(`example incomplete: ${name}`);
+  }
+  const files = {
+    'main.lua': await mainRes.text(),
+    'conf.lua': await confRes.text(),
+  };
+  let meta = {};
+  if (metaRes.ok) {
+    try { meta = await metaRes.json(); } catch { /* leave meta empty */ }
+  }
+  const thumb = await fetchExampleThumb(name);
+  return { files, meta, thumb };
+}
+
+/* Try each supported thumb extension in priority order. Returns a
+   data: URL of the first one that exists, or null if none do. We
+   inline as data URL rather than storing the path so the duplicated
+   project is self-contained — survives the example being deleted,
+   renamed, or unreachable. */
+async function fetchExampleThumb(name) {
+  for (const ext of EXAMPLE_THUMB_EXTS) {
+    try {
+      const res = await fetch(`examples/${name}/thumb.${ext}`);
+      if (!res.ok) continue;
+      const blob = await res.blob();
+      return await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload  = () => resolve(r.result);
+        r.onerror = reject;
+        r.readAsDataURL(blob);
+      });
+    } catch { /* try next ext */ }
+  }
+  return null;
+}
+
 /* ---------- project bootstrap ----------
    Resolve which project to open, creating a starter one if
    this is the user's first visit or their stored project is
@@ -66,11 +120,18 @@ async function bootstrapProject() {
   const exampleName = params.get('example');
   if (exampleName) {
     try {
-      const files = await fetchFixtureFiles(exampleName);
+      const { files, meta, thumb } = await fetchExampleFiles(exampleName);
       const newId = createProject({
-        title: exampleName,
+        /* uniqueTitle handles the repeat-duplicate case: clicking
+           breakout from Examples a second time yields "breakout (2)"
+           instead of stamping out two projects with identical titles. */
+        title: uniqueTitle(meta.title ?? exampleName),
         files,
         activeFile: 'main.lua',
+        description: meta.description,
+        tags: meta.tags,
+        author: meta.author,
+        thumb,
       });
       if (newId) {
         setActiveProjectId(newId);
@@ -83,9 +144,13 @@ async function bootstrapProject() {
       console.warn('[editor] storage unavailable for example — running in-memory');
       return {
         id: null,
-        title: exampleName,
+        title: meta.title ?? exampleName,
         files,
         activeFile: 'main.lua',
+        description: meta.description,
+        tags: meta.tags,
+        author: meta.author,
+        thumb,
       };
     } catch (e) {
       /* Bad ?example= name. Don't fail the whole boot — drop the
@@ -375,6 +440,44 @@ async function bootstrapProject() {
   const previewFrame = document.querySelector('.preview-frame');
   const playBtn = document.getElementById('play');
 
+  /* Apply project.thumb to the preview-stage as a backdrop for the
+     pre-Run identity card. Called once on mount and again after
+     each captureThumbNow so a fresh Run-then-Stop cycle updates the
+     visible backdrop without a page reload. Safe to call when thumb
+     is absent — removes the image and clears the class.
+
+     Critically, .has-thumb is added ONLY on the image's onload event,
+     not synchronously when src is set. The .has-thumb class is what
+     reveals the frosted-glass panel behind the title text — if we
+     added it before the image was actually ready (or if the image
+     ultimately failed to load), the frost panel would render alone
+     as a floating translucent box with nothing behind it. */
+  function applyPreviewThumb() {
+    if (!previewStage) return;
+    let bg = previewStage.querySelector('.preview-thumb-bg');
+    if (project?.thumb) {
+      if (!bg) {
+        bg = document.createElement('img');
+        bg.className = 'preview-thumb-bg';
+        bg.alt = '';
+        /* prepend so the img sits below preview-title in DOM order;
+           z-index handles visual layering but DOM order matters for
+           how ::after stacks on top of it. */
+        previewStage.prepend(bg);
+      }
+      bg.onload = () => previewStage.classList.add('has-thumb');
+      bg.onerror = () => {
+        previewStage.classList.remove('has-thumb');
+        bg.remove();
+      };
+      bg.src = project.thumb;
+    } else {
+      if (bg) bg.remove();
+      previewStage.classList.remove('has-thumb');
+    }
+  }
+  applyPreviewThumb();
+
   /* ---------- Runtime status & metrics (c5c) ----------
      Two separate concerns sharing the same lifecycle events:
 
@@ -525,8 +628,18 @@ async function bootstrapProject() {
 
     if (previewStage) previewStage.classList.add('running');
     previewFrame.hidden = false;
-    previewFrame.src = 'runtime/runner.html?t=' + Date.now();
+    /* Use contentWindow.location.replace() instead of setting .src.
+       Setting iframe.src pushes a history entry on the PARENT window
+       in every browser that's shipped this decade — so a Run → Stop
+       → Run sequence stuffs three entries into the back stack, and
+       hitting the browser back arrow after a Run walks the user
+       through iframe states rather than back to the projects page.
+       .location.replace() navigates the iframe without polluting
+       parent history. Falls back to .src on the cold-start case
+       where contentWindow isn't accessible yet. */
+    navigateRunner('runtime/runner.html?t=' + Date.now());
     resetPauseStateForFreshRun();
+    scheduleThumbCapture();
 
     /* Optimistic state flip: badge says "running" the moment we
        trigger the run, before the runner has even loaded. This
@@ -551,11 +664,89 @@ async function bootstrapProject() {
      Run starts from a clean slate. */
   function stopProject() {
     if (!previewFrame) return;
+    /* Capture one last thumb before tearing down — the engine's been
+       running for some user-decided amount of time, so this frame is
+       the most representative of how they left their project. The
+       capture is synchronous on the same canvas reference so it
+       completes before the src swap clears it. */
+    captureThumbNow();
     if (previewStage) previewStage.classList.remove('running');
-    previewFrame.src = 'about:blank';
+    /* See runProject() comment — .location.replace() so tearing the
+       iframe back to about:blank doesn't add yet another entry to the
+       parent's history stack. */
+    navigateRunner('about:blank');
     previewFrame.hidden = true;
     resetPauseStateForFreshRun();
     setRuntimeStatus('idle');
+  }
+
+  /* Navigate the runner iframe without pushing a parent history entry.
+     Uses contentWindow.location.replace() which is the only DOM API
+     that mutates an iframe's location *in-place*. Falls back to .src
+     if contentWindow is unavailable (rare — happens only if the
+     iframe element hasn't connected its window yet). */
+  function navigateRunner(url) {
+    try {
+      const win = previewFrame.contentWindow;
+      if (win && win.location && typeof win.location.replace === 'function') {
+        win.location.replace(url);
+        return;
+      }
+    } catch (e) {
+      /* Cross-origin or detached — fall through. */
+    }
+    previewFrame.src = url;
+  }
+
+  /* ---------- Thumbnail auto-capture ----------
+     Reads the Love2D canvas inside the runner iframe, downscales it
+     to 480×270, and persists the data:URL on project.thumb so the
+     Projects page Yours card can render it behind the card-bed.
+
+     Runs on two triggers: a one-shot 3s timer after Run (covers the
+     "user never hits Stop" case) and on Stop (latest frame the user
+     decided to leave behind). preserveDrawingBuffer is patched into
+     getContext inside runner.js, so toDataURL reads back real pixels
+     instead of a cleared buffer. */
+  const THUMB_W = 480;
+  const THUMB_H = 270;
+  const THUMB_CAPTURE_DELAY_MS = 3000;
+  let thumbTimer = null;
+
+  function scheduleThumbCapture() {
+    if (thumbTimer) clearTimeout(thumbTimer);
+    thumbTimer = setTimeout(() => {
+      thumbTimer = null;
+      captureThumbNow();
+    }, THUMB_CAPTURE_DELAY_MS);
+  }
+
+  function captureThumbNow() {
+    if (thumbTimer) { clearTimeout(thumbTimer); thumbTimer = null; }
+    if (!previewFrame || !project?.id) return;
+    try {
+      const doc = previewFrame.contentDocument;
+      const srcCanvas = doc?.getElementById('canvas');
+      if (!srcCanvas || !srcCanvas.width || !srcCanvas.height) return;
+      const out = document.createElement('canvas');
+      out.width = THUMB_W; out.height = THUMB_H;
+      const ctx = out.getContext('2d');
+      ctx.drawImage(srcCanvas, 0, 0, THUMB_W, THUMB_H);
+      const dataUrl = out.toDataURL('image/png');
+      /* Guard against the all-clear "blank canvas" case — a tiny PNG
+         means the buffer was empty (game hadn't drawn yet, or
+         preserveDrawingBuffer didn't take). Skip rather than
+         overwrite a real thumb with a black square. */
+      if (dataUrl.length < 200) return;
+      project.thumb = dataUrl;
+      saveProject(project.id, project);
+      applyPreviewThumb();
+    } catch (e) {
+      /* Cross-origin or tainted-canvas — should never hit since the
+         runner is same-origin and preserveDrawingBuffer is patched,
+         but swallow rather than break Run/Stop. */
+      console.warn('[thumb] capture failed:', e);
+    }
   }
 
   const stopBtn = document.getElementById('btn-stop');

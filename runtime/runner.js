@@ -42,6 +42,26 @@
      arguments: ['/'] tells Love2D to run the project rooted at /.
      Same as v1's fixtures/test_a/game.js; the engine expects this. */
 
+  /* ---------- Preserve WebGL drawing buffer ----------
+     The editor wants to read the canvas pixels (via toDataURL) to
+     auto-capture project thumbnails. By default Emscripten / Love.js
+     creates the WebGL context with preserveDrawingBuffer:false, which
+     means the back buffer is cleared after each present and toDataURL
+     reads back blank. Patching getContext here injects the attribute
+     before Love.js binds the context, so subsequent reads see the
+     last drawn frame. Negligible perf cost for a 2D Love2D project. */
+  (function patchPreserveDrawingBuffer() {
+    const canvasEl = document.getElementById('canvas');
+    if (!canvasEl) return;
+    const orig = canvasEl.getContext.bind(canvasEl);
+    canvasEl.getContext = function (type, attrs) {
+      if (type === 'webgl' || type === 'webgl2' || type === 'experimental-webgl') {
+        attrs = Object.assign({}, attrs || {}, { preserveDrawingBuffer: true });
+      }
+      return orig(type, attrs);
+    };
+  })();
+
   window.Module = {
     arguments: ['/'],
     canvas: document.getElementById('canvas'),
