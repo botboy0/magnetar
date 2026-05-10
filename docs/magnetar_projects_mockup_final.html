@@ -1,0 +1,1264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Magnetar — Projects</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Space+Mono:wght@400;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   MAGNETAR — PROJECTS PAGE MOCKUP (v2 · UNIFIED LIBRARY)
+
+   v2 reframes Projects from "your saved work" into a unified
+   library across THREE sources:
+
+     1. Your projects   — local, user-created (was the entire
+                          v1 page).
+     2. Examples        — bundled demos shipped with Magnetar
+                          (folded in from the old "Games" page).
+     3. Browse          — community / discovery. Empty in v2.
+                          Slot exists from day one so the social
+                          layer slots in later without restructure.
+
+   The masthead is no longer page identity (no h1 saying
+   "Projects"). It is now NAVIGATIONAL CHROME — a source
+   toggle on the left and a long search bar on the right —
+   doing load-bearing work, not labelling the page. The
+   Editor's "no page heading" model holds: the workspace
+   shape itself tells you where you are. The grid is the
+   workspace; the source toggle + search tell you what's
+   currently in it.
+
+   The Navigator drops "Games" (it's now a source within this
+   page) — three sibling pages remain: Devlog, Editor, and
+   this page (Projects, current — not in the menu).
+
+   THINGS DELIBERATELY ABSENT (per brief):
+     - sort dropdowns, tag filters, view-mode switchers
+     - account / sign-in / settings
+     - statistics / activity / storage indicators
+     - Browse-source content cards (slot only, no v3 mockups)
+     - newsletter, Discord, marketing copy, GitHub stars
+     - footer
+   ============================================================ */
+
+/* ---------- Tokens (subset of design-system colors_and_type.css) ---------- */
+:root {
+  /* Plasma (logo-only) */
+  --plasma-violet:   #8b5cf6;
+  --plasma-cyan:     #06b6d4;
+  --plasma-magenta:  #d946ef;
+
+  /* CI palette */
+  --mag-violet:      #7c3aed;
+  --mag-cyan:        #06b6d4;
+  --mag-magenta:    #c026d3;
+  --supernova:       #f97316;
+
+  /* Surfaces */
+  --void:            #0a0a0f;
+  --void-2:          #12121a;
+  --void-3:          #1a1a24;
+  --topstrip-fill:   #0d0d14;
+  --muted:           #4a4d57;
+  --muted-2:         #6b6e78;
+  --stardust:        #d1d5db;
+
+  --fg:              var(--stardust);
+  --fg-2:            var(--muted-2);
+
+  --font-display: "Syne", system-ui, sans-serif;
+  --font-mono:    "Space Mono", ui-monospace, monospace;
+  --font-body:    "Atkinson Hyperlegible", system-ui, sans-serif;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+html { color-scheme: dark; }
+body {
+  background: var(--void);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  /* No starfield on body — same call as v1. The brand work is in
+     the wordmark, accent colors, and content surfaces. */
+}
+
+/* ============================================================
+   TOP STRIP — same grammar as editor v2.
+   Project-bar slot intentionally empty on Projects: no current
+   project to identify, and (per brief) the right side stays
+   confidently empty. Navigator alone earns the strip.
+   ============================================================ */
+.topstrip {
+  position: sticky; top: 0; z-index: 30;
+  display: flex; align-items: center; gap: 20px;
+  padding: 6px 18px; min-height: 42px;
+  background: var(--topstrip-fill);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  box-shadow: 0 1px 0 rgba(6,182,212,0.06), 0 12px 32px -16px rgba(0,0,0,0.8);
+}
+
+.navigator { position: relative; }
+.nav-trigger {
+  position: relative; display: inline-flex; align-items: center; gap: 10px;
+  padding: 5px 12px 5px 14px; background: var(--void-2); border: none;
+  border-radius: var(--radius-lg); cursor: pointer;
+  transition: background 0.15s, border-radius 0.25s;
+  color: inherit; min-height: 30px;
+}
+.nav-trigger:hover { background: var(--void-3); }
+.navigator.open .nav-trigger {
+  border-radius: 8px 8px 0 0;
+  background: linear-gradient(180deg, rgba(6,182,212,0.12), rgba(6,182,212,0.04));
+}
+.navigator::before {
+  content: ""; position: absolute; inset: -1px; border-radius: 9px; padding: 1px;
+  background: linear-gradient(135deg, var(--plasma-violet), var(--plasma-cyan), var(--plasma-magenta));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  opacity: 0.45; transition: opacity 0.2s; pointer-events: none;
+}
+.navigator:hover::before { opacity: 0.8; }
+.navigator.open::before { opacity: 1; }
+
+.wordmark .mag {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: 1.15rem; letter-spacing: -0.04em; line-height: 1;
+  background: linear-gradient(135deg, var(--plasma-violet), var(--plasma-cyan), var(--plasma-magenta));
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.chev {
+  width: 18px; height: 18px; stroke: url(#plasma-chev);
+  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+  fill: none; opacity: 0.7; transition: opacity 0.15s, transform 0.3s;
+}
+.nav-trigger:hover .chev { opacity: 1; }
+.navigator.open .chev { opacity: 1; transform: rotate(180deg); }
+
+.nav-dropdown {
+  position: absolute; top: 100%; left: 0; right: 0;
+  background: var(--void-2); border-radius: 0 0 8px 8px;
+  overflow: hidden; max-height: 0; transition: max-height 0.25s ease;
+}
+.navigator.open .nav-dropdown { max-height: 220px; }
+.nav-dropdown-inner { display: flex; flex-direction: column; gap: 1px; padding: 4px; }
+.nav-dropdown-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: var(--radius-md);
+  color: var(--stardust); font-size: 0.85rem; text-decoration: none;
+  transition: background 0.12s, color 0.12s;
+}
+.nav-dropdown-item:hover { background: rgba(6,182,212,0.10); color: var(--mag-cyan); }
+.nav-dropdown-item svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+
+/* ============================================================
+   PAGE LAYOUT
+   The masthead-to-grid rhythm tightens vs v1 because the
+   masthead is no longer a vertical identity slab — it's a
+   single horizontal band of chrome. Generous breathing room
+   above (separation from the top-strip seam) and below
+   (separation from the grid) keeps it composed without it
+   feeling thin.
+   ============================================================ */
+.page {
+  /* Gutters tightened to match editor chrome: the editor's
+     workspace runs flush to the top-strip with ~18px side
+     padding, so the Projects page should feel similarly
+     anchored. The masthead is a single chrome row now (not
+     a vertical identity slab), so the breathing room above
+     it shrinks proportionally. */
+  /* Editor's .workspace uses margin: 24px 14px 30px — match
+     exactly so the grid sits in the same gutters as the
+     editor shell. */
+  max-width: none;
+  margin: 24px 14px 30px;
+  padding: 0;
+}
+
+/* ============================================================
+   MASTHEAD — UNIFIED LIBRARY CHROME
+
+   Two elements composed as one horizontal band:
+     - Source toggle (left)  — three tabs: Your projects /
+       Examples / Browse. Active tab marked with a 2px cyan
+       underline (same active-state language as the editor's
+       dock icons and code-panel tabs — deliberate vocabulary
+       reuse, not a new pattern).
+     - Search bar (right)    — long, prominent, quiet at rest.
+       Magnifier glyph at the left, focus-ring in cyan. Empty
+       placeholder hints at the union scope. The search bar
+       is the page's PRIMARY interactive element at rest;
+       the composition reflects that by giving it the wider
+       horizontal slot.
+
+   No h1, no page label, no eyebrow. The masthead does
+   navigational work, not identity-claiming.
+
+   Hairline rule below: dropped intentionally — the source
+   toggle's underline already reads as the masthead's bottom
+   edge for the active column, and a full-width rule would
+   fight visually with the underline indicator. The grid's
+   own top edge takes over from there.
+   ============================================================ */
+.masthead {
+  display: flex;
+  align-items: stretch;
+  gap: 28px;
+  margin: 0 0 36px;
+  /* visual separation between source toggle row and grid is
+     carried by the underline on the active tab + 36px space
+     to the grid's first row. */
+}
+
+/* ---- Source toggle ----
+   Typographic, uncontained. Tabs are named places, not form
+   controls — no surrounding pill, no chip group. Cohesion
+   comes from a tight 4px gap and a bottom-aligned underline
+   on the active tab; presence comes from cyan fill on the
+   active label (text + underline both in mag-cyan) so the
+   active state carries weight without needing chrome. */
+.source-toggle {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 40px;
+}
+
+/* Each tab uses the SAME hover-flicker fix pattern as the
+   plus-card: the outer <button> is the stable hover target
+   (no transforms, no moving background), and the inner
+   .tab-inner carries every cosmetic that could otherwise
+   pull the cursor reference out from under itself. The
+   underline indicator sits on the outer button so it's
+   geometrically anchored to the click region, not to the
+   visual frame. */
+.tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 10px 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.tab-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.005em;
+  color: var(--muted-2);
+  transition: color 0.15s ease;
+}
+.tab:hover .tab-inner { color: var(--stardust); }
+.tab.active .tab-inner { color: var(--mag-cyan); }
+.tab[disabled] { cursor: not-allowed; }
+.tab[disabled] .tab-inner { color: var(--muted); }
+.tab[disabled]:hover .tab-inner { color: var(--muted); }
+
+/* Active-state underline: 2px in mag-cyan, sitting at the
+   bottom of the tab. Same vocabulary as the editor's dock-tile
+   active state and code-panel tab indicator. Paired with the
+   active label tinting cyan as well — text and rule both
+   carry the active color, so the indicator is unmistakable
+   without contained chrome. */
+.tab .tab-underline {
+  position: absolute;
+  left: 10px; right: 10px; bottom: 0;
+  height: 2px;
+  background: var(--mag-cyan);
+  border-radius: 2px;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.18s ease;
+}
+.tab.active .tab-underline { transform: scaleX(1); }
+
+/* "soon" label on the disabled Browse tab — present but quiet,
+   reads as forward-looking scaffolding rather than as a broken
+   tab. Per brief: the architectural slot exists; we're committing
+   to it now even though the social layer hasn't landed. */
+.tab-soon {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 400;
+  color: var(--muted);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius-sm);
+  padding: 1px 6px 2px;
+  margin-left: 2px;
+  /* sits in mono register because it's a "system status"
+     label about the product, not a content label about the
+     tab's destination. */
+}
+
+/* ---- Search bar ---- */
+/* Long and prominent, but quiet at rest. Takes whatever
+   horizontal space remains (flex: 1) up to a sensible max so
+   it doesn't run away to the page edge on ultrawide. The
+   bar is the page's primary interactive element at rest — its
+   horizontal commitment communicates that priority without
+   saying it in words. */
+.search {
+  position: relative;
+  flex: 1;
+  margin-left: 16px;
+  display: flex;
+  align-items: center;
+}
+.search-icon {
+  position: absolute;
+  left: 14px; top: 50%; transform: translateY(-50%);
+  width: 16px; height: 16px;
+  color: var(--muted-2);
+  pointer-events: none;
+  transition: color 0.15s ease;
+}
+.search-icon svg { width: 100%; height: 100%; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.search-input {
+  flex: 1;
+  height: 40px;
+  padding: 0 16px 0 40px;
+  background: var(--void-2);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius-lg);
+  color: var(--stardust);
+  font-family: var(--font-body);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+.search-input::placeholder {
+  color: var(--muted-2);
+  /* placeholder is deliberately not Atkinson-italic — italics
+     would say "this is hint text" twice (the empty field
+     already says that). */
+}
+.search-input:hover {
+  border-color: rgba(255,255,255,0.12);
+}
+.search-input:focus {
+  border-color: var(--mag-cyan);
+  background: var(--void-3);
+  box-shadow: 0 0 0 3px rgba(6,182,212,0.15);
+}
+.search:focus-within .search-icon { color: var(--mag-cyan); }
+
+/* ============================================================
+   GRID & CARDS — preserved from v1.
+   16:9, 320px minmax, 22px gap. The grid is the workspace.
+   Source-aware variations on cards documented per-source below.
+   ============================================================ */
+.grid {
+  display: grid;
+  /* Bumped from 320px → 400px so cards grow to fill the
+     wider editor-aligned gutters while still landing 3-up
+     at typical desktop widths. Falls to 2-up on narrower
+     viewports. */
+  grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+  gap: 22px;
+}
+
+.card {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-xl);
+  background: #1f2030;
+  border: 1px solid rgba(255,255,255,0.08);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(6,182,212,0.45);
+  box-shadow: 0 14px 32px -8px rgba(0,0,0,0.7), 0 0 0 1px rgba(6,182,212,0.2);
+}
+
+/* Procedural thumbnail.
+   Implementer note (carried from v1): replace with real captured
+   frames when a thumbnail-generation pipeline lands. The bottom
+   ~30-40% of the card carries the metadata bed — keep that band
+   visually quiet in real captures (low contrast, no busy
+   foreground), or crop/dim before compositing. */
+.thumb {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse at 30% 30%, var(--th-glow, rgba(124,58,237,0.32)) 0%, transparent 55%),
+    radial-gradient(ellipse at 70% 70%, var(--th-glow-2, rgba(6,182,212,0.22)) 0%, transparent 55%),
+    linear-gradient(180deg, #1f2030, #15161f);
+  overflow: hidden;
+}
+
+/* Metadata bed — translucent gradient riser. Click-through. */
+.card-bed {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 14px 16px 14px;
+  background: linear-gradient(180deg, transparent, rgba(15,16,24,0.88) 35%, rgba(15,16,24,0.97));
+  display: flex; flex-direction: column; gap: 8px;
+  pointer-events: none;
+}
+.card-title {
+  font-family: var(--font-display); font-weight: 700;
+  font-size: 1.15rem; letter-spacing: -0.01em;
+  color: var(--stardust);
+  line-height: 1.15;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Examples-source: a one-line description sits between title
+   and tags. Reads as load-bearing content (the user is browsing
+   examples for a reason — concept-shopping), not as decorative
+   filler. Limited to one line; truncates. */
+.card-desc {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--muted-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-top: -2px; /* nudge tighter to the title — they read as a unit */
+}
+
+.card-meta {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-mono); font-size: 10.5px;
+  color: var(--muted-2); letter-spacing: 0.04em;
+}
+.card-meta .dot { opacity: 0.6; }
+
+.tags { display: flex; flex-wrap: wrap; gap: 6px; min-height: 0; }
+.tag {
+  font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.06em; text-transform: lowercase;
+  padding: 3px 8px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 999px;
+  color: var(--stardust);
+}
+.tag.cy { color: var(--mag-cyan); border-color: rgba(6,182,212,0.25); background: rgba(6,182,212,0.08); }
+.tag.vi { color: #a78bfa; border-color: rgba(139,92,246,0.25); background: rgba(139,92,246,0.10); }
+.tag.ma { color: #e879f9; border-color: rgba(217,70,239,0.25); background: rgba(217,70,239,0.08); }
+.tag.or { color: var(--supernova); border-color: rgba(249,115,22,0.30); background: rgba(249,115,22,0.08); }
+
+/* ============================================================
+   CARD ACTIONS — SOURCE-AWARE.
+
+   Visual language identical across all sources (rounded
+   square icon buttons, top-right, right-to-left flow). What
+   varies is WHICH actions are present:
+
+     - Your projects: rename | duplicate | delete (3 buttons)
+     - Examples:      duplicate                   (1 button)
+       Reasoning: bundled examples can't be renamed (their
+       names are how Magnetar identifies them) and can't be
+       deleted (they ship with the product). The only useful
+       verb is "fork this into your own work" — which is
+       Duplicate, not Fork. Fork is reserved for the social
+       layer's verb on community projects.
+     - Browse:        n/a — no community cards in v2.
+   ============================================================ */
+.card-actions {
+  position: absolute; top: 10px; right: 10px;
+  display: flex; gap: 6px;
+  z-index: 2;
+}
+.icon-btn {
+  width: 30px; height: 30px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(10,10,15,0.55);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius-md);
+  color: var(--muted-2); cursor: pointer;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
+}
+.icon-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.icon-btn:hover { color: var(--stardust); background: rgba(26,26,36,0.85); border-color: rgba(255,255,255,0.14); }
+.icon-btn.danger:hover { color: var(--supernova); border-color: rgba(249,115,22,0.4); }
+
+/* ============================================================
+   PLUS-CARD — SOURCE-AWARE.
+   Only renders in the YOUR PROJECTS source. You don't create
+   bundled examples (you fork from them — that's Duplicate on
+   an example card), and you don't create community projects
+   (you fork from them, in v3). Keeping the plus-card scoped
+   to "your work" preserves its meaning.
+   ============================================================ */
+
+/* Outer button = stable hover target. */
+.plus-card {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+/* Inner = visual card (lifts on hover). */
+.plus-card-inner {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-xl);
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(124,58,237,0.10) 0%, transparent 60%),
+    #1f2030;
+  border: 1px dashed rgba(255,255,255,0.22);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px;
+  transition: border-color 0.2s, background 0.2s, transform 0.18s;
+  overflow: hidden;
+}
+.plus-card:hover .plus-card-inner {
+  border-color: transparent;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(124,58,237,0.18) 0%, transparent 60%),
+    #1f2030;
+  transform: translateY(-2px);
+}
+
+.plus-card-inner::before {
+  content: ""; position: absolute; inset: 0; border-radius: var(--radius-xl); padding: 1px;
+  background: linear-gradient(135deg, var(--plasma-violet), var(--plasma-cyan), var(--plasma-magenta));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  opacity: 0; transition: opacity 0.25s;
+  pointer-events: none;
+}
+.plus-card:hover .plus-card-inner::before { opacity: 0.85; }
+
+.plus-glyph {
+  position: relative;
+  width: 38%; aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
+  filter: drop-shadow(0 0 14px rgba(139,92,246,0.45)) drop-shadow(0 0 6px rgba(6,182,212,0.30));
+  transition: transform 0.22s ease;
+}
+.plus-card:hover .plus-glyph {
+  transform: scale(1.08) rotate(90deg);
+}
+.plus-glyph svg { width: 100%; height: 100%; overflow: visible; }
+.plus-card::after {
+  content: ""; position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%);
+  width: 56%; aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle, rgba(139,92,246,0.30), rgba(6,182,212,0.16) 45%, transparent 70%);
+  filter: blur(14px); pointer-events: none;
+  opacity: 0.6; transition: opacity 0.25s;
+  z-index: 0;
+}
+.plus-card:hover::after { opacity: 1; }
+.plus-card-inner > * { position: relative; z-index: 1; }
+
+.plus-label {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: 1rem; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--stardust);
+  transition: color 0.2s, letter-spacing 0.2s;
+}
+.plus-card:hover .plus-label { color: #fff; letter-spacing: 0.18em; }
+
+/* Empty-state caption — only the plus-card source (Your projects)
+   uses this. Quiet mono line below the lone plus-card. */
+.empty-caption {
+  grid-column: 1 / -1;
+  text-align: center;
+  font-family: var(--font-mono); font-size: 11px;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--muted-2);
+  margin-top: 6px;
+}
+
+/* ============================================================
+   BROWSE EMPTY STATE — coming-soon panel.
+   Single quiet panel that occupies the grid space when the
+   Browse source is selected. NOT a marketing splash, NOT a
+   newsletter signup, NOT a "be the first!" CTA. It's a
+   placeholder that says "the slot exists, the cards don't yet."
+   Per brief: restraint preferred.
+
+   Visual: panel matches the dark-mode "instrument" treatment
+   from the design system (1px stardust border, 10px radius,
+   void-2 fill) so it reads as a deliberate piece of the page,
+   not as a broken-state error. Mono eyebrow + body sentence.
+   ============================================================ */
+/* ============================================================
+   BROWSE EMPTY STATE — centered on the void.
+   Dropped the contained-panel treatment: with the grid
+   otherwise empty, the bordered card created more dead space
+   below it than the message itself occupied. Now the copy
+   centers in the viewport's remaining vertical space, sitting
+   directly on the page background — the absence IS the slot.
+   ============================================================ */
+.browse-soon {
+  grid-column: 1 / -1;
+  min-height: 60vh;
+  padding: 48px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+}
+.browse-soon .eyebrow {
+  font-family: var(--font-mono); font-size: 11px;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--mag-cyan);
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.browse-soon .eyebrow::before {
+  content: "";
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--mag-cyan);
+  box-shadow: 0 0 8px rgba(6,182,212,0.5);
+}
+.browse-soon h2 {
+  font-family: var(--font-display); font-weight: 700;
+  font-size: 1.25rem; letter-spacing: -0.01em;
+  color: var(--stardust);
+  margin: 0;
+}
+.browse-soon p {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--muted-2);
+  max-width: 52ch;
+  margin: 0;
+}
+
+</style>
+</head>
+<body>
+
+<!-- Shared SVG defs — plasma gradient referenced by id. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="plasma-chev" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#8b5cf6"/>
+      <stop offset="50%"  stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#d946ef"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<!-- ============================================================
+     TOP STRIP
+     Navigator dropdown drops "Games" (it's now a source within
+     this page) — three sibling pages remain: Devlog and Editor
+     (Projects, current, omitted from the menu).
+     ============================================================ -->
+<header class="topstrip">
+
+  <div class="navigator" id="nav">
+    <button class="nav-trigger" aria-haspopup="menu" aria-expanded="false" aria-label="Navigate" onclick="toggleNav(event)">
+      <span class="wordmark"><span class="mag">MAGNETAR</span></span>
+      <svg class="chev" viewBox="0 0 24 24" aria-hidden="true">
+        <polyline points="7 8 12 12 17 8"/>
+        <polyline points="7 14 12 18 17 14"/>
+      </svg>
+    </button>
+    <div class="nav-dropdown" role="menu">
+      <div class="nav-dropdown-inner">
+        <a href="devlog.html" class="nav-dropdown-item" role="menuitem">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+          Devlog
+        </a>
+        <a href="editor.html" class="nav-dropdown-item" role="menuitem">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          Editor
+        </a>
+      </div>
+    </div>
+  </div>
+
+</header>
+
+<main class="page">
+
+  <!-- ============================================================
+       MASTHEAD — UNIFIED LIBRARY CHROME.
+       Source toggle (left) + search bar (right) on a single
+       horizontal band. No h1, no eyebrow, no page-identity copy.
+       The grid below is the workspace; the chrome above tells
+       you what's currently in it.
+       ============================================================ -->
+  <header class="masthead">
+
+    <!-- Source toggle.
+         Three tabs. Active tab shows the cyan underline. Each
+         tab uses the v1 plus-card hover-flicker fix pattern:
+         outer <button> = stable hover target, inner span
+         carries cosmetics. The underline indicator sits on
+         the outer button so it's geometrically anchored to
+         the click region. -->
+    <div class="source-toggle" role="tablist" aria-label="Library source">
+      <button class="tab active" role="tab" aria-selected="true" data-source="yours" onclick="setSource('yours')">
+        <span class="tab-inner">Your projects</span>
+        <span class="tab-underline" aria-hidden="true"></span>
+      </button>
+      <button class="tab" role="tab" aria-selected="false" data-source="examples" onclick="setSource('examples')">
+        <span class="tab-inner">Examples</span>
+        <span class="tab-underline" aria-hidden="true"></span>
+      </button>
+      <!-- Browse: disabled-but-visible. The architectural slot
+           is committed-to even though the social layer hasn't
+           landed. Forward-looking scaffolding, not aspirational
+           chrome. The "soon" pill says "known future source"
+           and refuses interaction. -->
+      <button class="tab" role="tab" aria-selected="false" aria-disabled="true" data-source="browse" onclick="setSource('browse')">
+        <span class="tab-inner">
+          Browse
+          <span class="tab-soon">soon</span>
+        </span>
+        <span class="tab-underline" aria-hidden="true"></span>
+      </button>
+    </div>
+
+    <!-- Search bar.
+         Long, prominent, quiet at rest. Magnifier glyph at left,
+         cyan focus ring. Placeholder hints at the union scope
+         without preaching. The bar is the page's primary
+         interactive element at rest — its horizontal commitment
+         communicates that priority.
+
+         Implementer note: search filters the CURRENTLY ACTIVE
+         source (so switching tabs rescopes the query). The
+         placeholder copy advertises the union scope so users
+         know search exists across all three even though it
+         operates within one at a time. -->
+    <label class="search">
+      <span class="search-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      </span>
+      <input
+        class="search-input"
+        type="search"
+        placeholder="Search across your projects, examples, and the community"
+        aria-label="Search the library"
+      >
+    </label>
+
+  </header>
+
+  <!-- ============================================================
+       GRID
+       Single grid element. Contents swap based on active source
+       via setSource(). 16:9 cards, 320px minmax, 22px gap.
+       ============================================================ -->
+  <section class="grid" id="grid">
+
+    <!-- ===== YOUR PROJECTS (default) ===== -->
+    <div class="src src-yours" data-source="yours" style="display: contents;">
+
+      <!-- PLUS-CARD — only present in Your projects.
+           Same hover-flicker-fix pattern as v1: outer button =
+           stable hover target, inner element carries the visual
+           card and lift. -->
+      <button class="plus-card" aria-label="Create new project" onclick="alert('new project')">
+        <span class="plus-card-inner">
+          <span class="plus-glyph">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <defs>
+                <linearGradient id="plus-fill" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%"   stop-color="#8b5cf6"/>
+                  <stop offset="43%"  stop-color="#06b6d4"/>
+                  <stop offset="57%"  stop-color="#06b6d4"/>
+                  <stop offset="100%" stop-color="#d946ef"/>
+                </linearGradient>
+                <mask id="plus-mask">
+                  <rect x="10.6" y="2"    width="2.8"  height="20"  fill="#fff"/>
+                  <rect x="2"    y="10.6" width="20"   height="2.8" fill="#fff"/>
+                </mask>
+              </defs>
+              <rect x="0" y="0" width="24" height="24" fill="url(#plus-fill)" mask="url(#plus-mask)"/>
+            </svg>
+          </span>
+          <span class="plus-label">New project</span>
+        </span>
+      </button>
+
+      <!-- shape-spawner -->
+      <article class="card" data-project="shape-spawner" onclick="alert('open: shape-spawner')">
+        <div class="thumb" style="background: radial-gradient(ellipse at 50% 90%, #1e3a8a 0%, #0a0a2a 55%, #050516 100%);">
+          <svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice" style="position:absolute; inset:0; width:100%; height:100%;">
+            <defs>
+              <radialGradient id="ss-neb" cx="30%" cy="35%" r="45%"><stop offset="0%" stop-color="#a855f7" stop-opacity="0.55"/><stop offset="100%" stop-color="#a855f7" stop-opacity="0"/></radialGradient>
+              <radialGradient id="ss-neb2" cx="75%" cy="20%" r="35%"><stop offset="0%" stop-color="#22d3ee" stop-opacity="0.45"/><stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/></radialGradient>
+            </defs>
+            <rect width="320" height="180" fill="url(#ss-neb)"/>
+            <rect width="320" height="180" fill="url(#ss-neb2)"/>
+            <g fill="#ffffff"><circle cx="22" cy="18" r="0.8"/><circle cx="68" cy="32" r="0.6"/><circle cx="112" cy="12" r="1"/><circle cx="154" cy="22" r="0.6"/><circle cx="210" cy="58" r="0.8"/><circle cx="268" cy="24" r="1.2"/><circle cx="294" cy="68" r="0.7"/><circle cx="42" cy="82" r="0.6"/><circle cx="178" cy="94" r="0.6"/></g>
+            <g><polygon points="80,42 73,58 87,58" fill="#ef4444"/><polygon points="110,32 103,48 117,48" fill="#ef4444"/><polygon points="140,26 133,42 147,42" fill="#ef4444"/><polygon points="170,32 163,48 177,48" fill="#ef4444"/><polygon points="200,42 193,58 207,58" fill="#ef4444"/><polygon points="244,52 232,72 256,72 256,62 244,62" fill="#f59e0b"/><polygon points="60,62 48,82 72,82 72,72 60,72" fill="#f59e0b"/></g>
+            <g fill="#fde68a"><rect x="159" y="68" width="2" height="10"/><rect x="159" y="86" width="2" height="10"/><rect x="159" y="104" width="2" height="10"/></g>
+            <g><circle cx="140" cy="34" r="10" fill="#fbbf24" opacity="0.6"/><circle cx="140" cy="34" r="5" fill="#fff7ed"/></g>
+            <g><polygon points="160,128 148,150 172,150" fill="#22d3ee"/><polygon points="160,128 154,142 166,142" fill="#a5f3fc"/><rect x="144" y="144" width="6" height="4" fill="#22d3ee"/><rect x="170" y="144" width="6" height="4" fill="#22d3ee"/><polygon points="156,150 160,162 164,150" fill="#f97316"/></g>
+            <text x="12" y="22" font-family="'Space Mono', monospace" font-size="10" fill="#fde68a" letter-spacing="1">SCORE 014280</text>
+            <text x="262" y="22" font-family="'Space Mono', monospace" font-size="10" fill="#fca5a5" letter-spacing="1">WAVE 03</text>
+            <rect x="12" y="162" width="60" height="4" fill="#1f2937"/><rect x="12" y="162" width="42" height="4" fill="#22c55e"/>
+          </svg>
+        </div>
+        <div class="card-actions">
+          <!-- Your projects: rename | duplicate | delete (right-to-left visual flow) -->
+          <button class="icon-btn" title="Rename" onclick="event.stopPropagation();"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>
+          <button class="icon-btn" title="Duplicate" onclick="event.stopPropagation();"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
+          <button class="icon-btn danger" title="Delete" onclick="event.stopPropagation();"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+        </div>
+        <div class="card-bed">
+          <div class="card-title">shape-spawner</div>
+          <div class="tags"><span class="tag cy">first-game</span><span class="tag vi">arcade</span></div>
+          <div class="card-meta"><span>3 files</span><span class="dot">·</span><span>updated 2h ago</span></div>
+        </div>
+      </article>
+
+      <!-- pong-but-loud -->
+      <article class="card" onclick="alert('open: pong-but-loud')">
+        <div class="thumb" style="--th-glow: rgba(6,182,212,0.32); --th-glow-2: rgba(192,38,211,0.20);">
+          <svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice" style="position:absolute; inset:0; width:100%; height:100%;">
+            <line x1="160" y1="10" x2="160" y2="170" stroke="#d1d5db" stroke-width="2" stroke-dasharray="6 8" opacity="0.5"/>
+            <text x="100" y="38" font-family="'Space Mono', monospace" font-size="22" fill="#06b6d4" text-anchor="middle" font-weight="700">07</text>
+            <text x="220" y="38" font-family="'Space Mono', monospace" font-size="22" fill="#c026d3" text-anchor="middle" font-weight="700">04</text>
+            <rect x="22" y="68" width="6" height="42" rx="2" fill="#06b6d4"/>
+            <rect x="292" y="82" width="6" height="42" rx="2" fill="#c026d3"/>
+            <rect x="175" y="96" width="6" height="6" fill="#f97316" opacity="0.3"/>
+            <rect x="185" y="96" width="6" height="6" fill="#f97316" opacity="0.55"/>
+            <rect x="195" y="96" width="7" height="7" fill="#f97316"/>
+          </svg>
+        </div>
+        <div class="card-actions">
+          <button class="icon-btn" title="Rename" onclick="event.stopPropagation();"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>
+          <button class="icon-btn" title="Duplicate" onclick="event.stopPropagation();"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
+          <button class="icon-btn danger" title="Delete" onclick="event.stopPropagation();"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+        </div>
+        <div class="card-bed">
+          <div class="card-title">pong-but-loud</div>
+          <div class="tags"><span class="tag cy">multiplayer</span></div>
+          <div class="card-meta"><span>2 files</span><span class="dot">·</span><span>updated yesterday</span></div>
+        </div>
+      </article>
+
+      <!-- synth-tutorial -->
+      <article class="card" onclick="alert('open: synth-tutorial')">
+        <div class="thumb" style="background: linear-gradient(180deg, #2d0b4e 0%, #6b1c6b 45%, #f472b6 75%, #fbbf24 100%);">
+          <svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice" style="position:absolute; inset:0; width:100%; height:100%;">
+            <defs>
+              <linearGradient id="st-bar" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fde68a"/><stop offset="45%" stop-color="#f472b6"/><stop offset="100%" stop-color="#7c3aed"/></linearGradient>
+              <linearGradient id="st-sun" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fde68a"/><stop offset="60%" stop-color="#f97316"/><stop offset="100%" stop-color="#be185d"/></linearGradient>
+            </defs>
+            <circle cx="160" cy="95" r="42" fill="url(#st-sun)"/>
+            <g fill="#2d0b4e"><rect x="110" y="96" width="100" height="3"/><rect x="110" y="104" width="100" height="3"/><rect x="110" y="114" width="100" height="4"/><rect x="110" y="126" width="100" height="5"/></g>
+            <g stroke="#fde68a" stroke-width="1" opacity="0.7"><line x1="0" y1="138" x2="320" y2="138"/><line x1="0" y1="148" x2="320" y2="148"/><line x1="0" y1="160" x2="320" y2="160"/><line x1="0" y1="175" x2="320" y2="175"/><line x1="160" y1="138" x2="-20" y2="180"/><line x1="160" y1="138" x2="60" y2="180"/><line x1="160" y1="138" x2="120" y2="180"/><line x1="160" y1="138" x2="200" y2="180"/><line x1="160" y1="138" x2="260" y2="180"/><line x1="160" y1="138" x2="340" y2="180"/></g>
+            <g fill="url(#st-bar)"><rect x="18" y="100" width="8" height="38"/><rect x="32" y="82" width="8" height="56"/><rect x="46" y="68" width="8" height="70"/><rect x="60" y="58" width="8" height="80"/><rect x="74" y="48" width="8" height="90"/><rect x="88" y="38" width="8" height="100"/><rect x="222" y="42" width="8" height="96"/><rect x="236" y="52" width="8" height="86"/><rect x="250" y="66" width="8" height="72"/><rect x="264" y="78" width="8" height="60"/><rect x="278" y="90" width="8" height="48"/><rect x="292" y="104" width="8" height="34"/></g>
+            <text x="160" y="30" text-anchor="middle" font-family="'Syne', sans-serif" font-weight="800" font-size="18" fill="#fde68a" letter-spacing="4">SYNTH</text>
+          </svg>
+        </div>
+        <div class="card-actions">
+          <button class="icon-btn" title="Rename" onclick="event.stopPropagation();"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>
+          <button class="icon-btn" title="Duplicate" onclick="event.stopPropagation();"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
+          <button class="icon-btn danger" title="Delete" onclick="event.stopPropagation();"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+        </div>
+        <div class="card-bed">
+          <div class="card-title">synth-tutorial</div>
+          <div class="tags"></div>
+          <div class="card-meta"><span>1 file</span><span class="dot">·</span><span>updated 4d ago</span></div>
+        </div>
+      </article>
+
+      <!-- moon-lander -->
+      <article class="card" onclick="alert('open: moon-lander')">
+        <div class="thumb" style="background: linear-gradient(180deg, #050516 0%, #0f1d3d 35%, #1f2937 75%, #374151 100%);">
+          <svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice" style="position:absolute; inset:0; width:100%; height:100%;">
+            <defs>
+              <radialGradient id="ml-planet" cx="40%" cy="35%" r="60%"><stop offset="0%" stop-color="#fbbf24"/><stop offset="60%" stop-color="#dc2626"/><stop offset="100%" stop-color="#450a0a"/></radialGradient>
+              <linearGradient id="ml-ground" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#9ca3af"/><stop offset="100%" stop-color="#374151"/></linearGradient>
+            </defs>
+            <circle cx="260" cy="50" r="40" fill="url(#ml-planet)"/>
+            <ellipse cx="260" cy="50" rx="58" ry="8" fill="none" stroke="#fbbf24" stroke-width="1.2" opacity="0.6"/>
+            <ellipse cx="260" cy="50" rx="66" ry="10" fill="none" stroke="#f97316" stroke-width="0.8" opacity="0.4"/>
+            <g fill="#ffffff"><circle cx="22" cy="18" r="0.8"/><circle cx="58" cy="32" r="0.6"/><circle cx="104" cy="14" r="1"/><circle cx="146" cy="24" r="0.6"/><circle cx="180" cy="42" r="0.8"/><circle cx="196" cy="12" r="0.7"/><circle cx="38" cy="68" r="0.6"/><circle cx="118" cy="86" r="0.5"/></g>
+            <path d="M 0,180 L 0,135 L 18,128 L 40,138 L 65,122 L 98,140 L 130,128 L 165,145 L 200,132 L 240,150 L 280,138 L 320,148 L 320,180 Z" fill="url(#ml-ground)"/>
+            <ellipse cx="60" cy="148" rx="14" ry="3" fill="#1f2937" opacity="0.6"/>
+            <ellipse cx="148" cy="160" rx="18" ry="3.5" fill="#1f2937" opacity="0.55"/>
+            <ellipse cx="230" cy="154" rx="12" ry="3" fill="#1f2937" opacity="0.5"/>
+            <rect x="82" y="144" width="36" height="3" fill="#22c55e"/>
+            <line x1="82" y1="144" x2="82" y2="138" stroke="#22c55e" stroke-width="1"/>
+            <line x1="118" y1="144" x2="118" y2="138" stroke="#22c55e" stroke-width="1"/>
+            <g transform="translate(100,90)">
+              <polygon points="-4,8 0,28 4,8" fill="#fbbf24"/>
+              <polygon points="-2,8 0,22 2,8" fill="#fff7ed"/>
+              <rect x="-10" y="-8" width="20" height="14" rx="2" fill="#e5e7eb"/>
+              <rect x="-8" y="-6" width="16" height="4" fill="#1f2937"/>
+              <line x1="0" y1="-8" x2="0" y2="-16" stroke="#e5e7eb" stroke-width="1"/>
+              <circle cx="0" cy="-17" r="1.5" fill="#ef4444"/>
+              <line x1="-10" y1="6" x2="-16" y2="14" stroke="#9ca3af" stroke-width="1.6"/>
+              <line x1="10" y1="6" x2="16" y2="14" stroke="#9ca3af" stroke-width="1.6"/>
+              <circle cx="-16" cy="14" r="1.6" fill="#9ca3af"/>
+              <circle cx="16" cy="14" r="1.6" fill="#9ca3af"/>
+              <circle cx="-8" cy="6" r="1.2" fill="#22c55e"/>
+              <circle cx="8" cy="6" r="1.2" fill="#ef4444"/>
+            </g>
+            <text x="12" y="22" font-family="'Space Mono', monospace" font-size="9" fill="#22c55e" letter-spacing="1">ALT 0042</text>
+            <text x="12" y="34" font-family="'Space Mono', monospace" font-size="9" fill="#22c55e" letter-spacing="1">FUEL 68%</text>
+            <text x="12" y="46" font-family="'Space Mono', monospace" font-size="9" fill="#fbbf24" letter-spacing="1">VEL  -2.4</text>
+          </svg>
+        </div>
+        <div class="card-actions">
+          <button class="icon-btn" title="Rename" onclick="event.stopPropagation();"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>
+          <button class="icon-btn" title="Duplicate" onclick="event.stopPropagation();"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
+          <button class="icon-btn danger" title="Delete" onclick="event.stopPropagation();"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+        </div>
+        <div class="card-bed">
+          <div class="card-title">moon-lander</div>
+          <div class="tags"><span class="tag vi">physics</span><span class="tag ma">wip</span></div>
+          <div class="card-meta"><span>5 files</span><span class="dot">·</span><span>updated last week</span></div>
+        </div>
+      </article>
+
+    </div>
+
+    <!-- ===== EXAMPLES ===== -->
+    <!-- Bundled demos shipped with Magnetar. No plus-card.
+         Single icon button per card: Duplicate ("fork this
+         into your own work" — but we don't call it Fork; Fork
+         is reserved for the social layer). Cards carry a
+         one-line description (load-bearing for concept-shopping)
+         and tags that telegraph what's interesting about the
+         example. -->
+    <div class="src src-examples" data-source="examples" style="display: none;">
+
+      <!-- breakout — the canonical bundled example, carried over
+           from the old "Games" page. -->
+      <article class="card" onclick="alert('open example: breakout')">
+        <div class="thumb" style="background: linear-gradient(180deg, #0a0a2a 0%, #050516 100%);">
+          <svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice" style="position:absolute; inset:0; width:100%; height:100%;">
+            <!-- brick rows -->
+            <g>
+              <!-- row 1 -->
+              <rect x="14"  y="22" width="36" height="12" rx="1" fill="#ef4444"/>
+              <rect x="54"  y="22" width="36" height="12" rx="1" fill="#ef4444"/>
+              <rect x="94"  y="22" width="36" height="12" rx="1" fill="#ef4444"/>
+              <rect x="134" y="22" width="36" height="12" rx="1" fill="#ef4444"/>
+              <rect x="174" y="22" width="36" height="12" rx="1" fill="#ef4444"/>
+              <rect x="214" y="22" width="36" height="12" rx="1" fill="#ef4444"/>
+              <rect x="254" y="22" width="36" height="12" rx="1" fill="#ef4444"/>
+              <!-- row 2 -->
+              <rect x="14"  y="38" width="36" height="12" rx="1" fill="#f97316"/>
+              <rect x="54"  y="38" width="36" height="12" rx="1" fill="#f97316"/>
+              <rect x="94"  y="38" width="36" height="12" rx="1" fill="#f97316"/>
+              <rect x="174" y="38" width="36" height="12" rx="1" fill="#f97316"/>
+              <rect x="214" y="38" width="36" height="12" rx="1" fill="#f97316"/>
+              <rect x="254" y="38" width="36" height="12" rx="1" fill="#f97316"/>
+              <!-- row 3 -->
+              <rect x="14"  y="54" width="36" height="12" rx="1" fill="#fbbf24"/>
+              <rect x="54"  y="54" width="36" height="12" rx="1" fill="#fbbf24"/>
+              <rect x="174" y="54" width="36" height="12" rx="1" fill="#fbbf24"/>
+              <rect x="214" y="54" width="36" height="12" rx="1" fill="#fbbf24"/>
+              <rect x="254" y="54" width="36" height="12" rx="1" fill="#fbbf24"/>
+              <!-- row 4 -->
+              <rect x="14"  y="70" width="36" height="12" rx="1" fill="#22c55e"/>
+              <rect x="214" y="70" width="36" height="12" rx="1" fill="#22c55e"/>
+              <rect x="254" y="70" width="36" height="12" rx="1" fill="#22c55e"/>
+            </g>
+            <!-- ball with trail -->
+            <circle cx="186" cy="118" r="3" fill="#fde68a"/>
+            <circle cx="178" cy="112" r="2.4" fill="#fde68a" opacity="0.55"/>
+            <circle cx="172" cy="106" r="1.8" fill="#fde68a" opacity="0.3"/>
+            <!-- paddle -->
+            <rect x="138" y="148" width="50" height="6" rx="2" fill="#22d3ee"/>
+            <!-- HUD -->
+            <text x="12"  y="172" font-family="'Space Mono', monospace" font-size="9" fill="#22d3ee" letter-spacing="1">SCORE 0210</text>
+            <text x="262" y="172" font-family="'Space Mono', monospace" font-size="9" fill="#fca5a5" letter-spacing="1">LIVES 03</text>
+          </svg>
+        </div>
+        <div class="card-actions">
+          <!-- Examples: duplicate only -->
+          <button class="icon-btn" title="Duplicate to your projects" onclick="event.stopPropagation();"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
+        </div>
+        <div class="card-bed">
+          <div class="card-title">breakout</div>
+          <div class="card-desc">Bricks, ball, paddle. The hello-world of arcade physics.</div>
+          <div class="tags"><span class="tag cy">arcade</span><span class="tag vi">collisions</span></div>
+        </div>
+      </article>
+
+      <!-- pong-tutorial -->
+      <article class="card" onclick="alert('open example: pong-tutorial')">
+        <div class="thumb" style="background: linear-gradient(180deg, #050516 0%, #0a0a18 100%);">
+          <svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice" style="position:absolute; inset:0; width:100%; height:100%;">
+            <line x1="160" y1="14" x2="160" y2="166" stroke="#d1d5db" stroke-width="2" stroke-dasharray="6 8" opacity="0.45"/>
+            <text x="100" y="42" font-family="'Space Mono', monospace" font-size="24" fill="#d1d5db" text-anchor="middle" font-weight="700">02</text>
+            <text x="220" y="42" font-family="'Space Mono', monospace" font-size="24" fill="#d1d5db" text-anchor="middle" font-weight="700">02</text>
+            <rect x="22"  y="78" width="6" height="42" rx="2" fill="#d1d5db"/>
+            <rect x="292" y="60" width="6" height="42" rx="2" fill="#d1d5db"/>
+            <rect x="200" y="100" width="6" height="6" fill="#d1d5db"/>
+          </svg>
+        </div>
+        <div class="card-actions">
+          <button class="icon-btn" title="Duplicate to your projects" onclick="event.stopPropagation();"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
+        </div>
+        <div class="card-bed">
+          <div class="card-title">pong-tutorial</div>
+          <div class="card-desc">Two paddles, one ball, every concept Magnetar needs to teach.</div>
+          <div class="tags"><span class="tag cy">tutorial</span><span class="tag vi">input</span></div>
+        </div>
+      </article>
+
+      <!-- snake -->
+      <article class="card" onclick="alert('open example: snake')">
+        <div class="thumb" style="background: radial-gradient(ellipse at 50% 50%, #052e16 0%, #020617 80%);">
+          <svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice" style="position:absolute; inset:0; width:100%; height:100%;">
+            <!-- grid dots -->
+            <g fill="#14532d" opacity="0.6">
+              <circle cx="20" cy="20" r="0.8"/><circle cx="40" cy="20" r="0.8"/><circle cx="60" cy="20" r="0.8"/><circle cx="80" cy="20" r="0.8"/><circle cx="100" cy="20" r="0.8"/><circle cx="120" cy="20" r="0.8"/><circle cx="140" cy="20" r="0.8"/><circle cx="160" cy="20" r="0.8"/><circle cx="180" cy="20" r="0.8"/><circle cx="200" cy="20" r="0.8"/><circle cx="220" cy="20" r="0.8"/><circle cx="240" cy="20" r="0.8"/><circle cx="260" cy="20" r="0.8"/><circle cx="280" cy="20" r="0.8"/><circle cx="300" cy="20" r="0.8"/>
+              <circle cx="20" cy="60" r="0.8"/><circle cx="60" cy="60" r="0.8"/><circle cx="100" cy="60" r="0.8"/><circle cx="140" cy="60" r="0.8"/><circle cx="180" cy="60" r="0.8"/><circle cx="220" cy="60" r="0.8"/><circle cx="260" cy="60" r="0.8"/><circle cx="300" cy="60" r="0.8"/>
+              <circle cx="20" cy="100" r="0.8"/><circle cx="60" cy="100" r="0.8"/><circle cx="100" cy="100" r="0.8"/><circle cx="140" cy="100" r="0.8"/><circle cx="180" cy="100" r="0.8"/><circle cx="220" cy="100" r="0.8"/><circle cx="260" cy="100" r="0.8"/><circle cx="300" cy="100" r="0.8"/>
+              <circle cx="20" cy="140" r="0.8"/><circle cx="60" cy="140" r="0.8"/><circle cx="100" cy="140" r="0.8"/><circle cx="140" cy="140" r="0.8"/><circle cx="180" cy="140" r="0.8"/><circle cx="220" cy="140" r="0.8"/><circle cx="260" cy="140" r="0.8"/><circle cx="300" cy="140" r="0.8"/>
+            </g>
+            <!-- snake body segments -->
+            <g fill="#22c55e">
+              <rect x="60"  y="60"  width="14" height="14" rx="2"/>
+              <rect x="78"  y="60"  width="14" height="14" rx="2"/>
+              <rect x="96"  y="60"  width="14" height="14" rx="2"/>
+              <rect x="96"  y="78"  width="14" height="14" rx="2"/>
+              <rect x="96"  y="96"  width="14" height="14" rx="2"/>
+              <rect x="114" y="96"  width="14" height="14" rx="2"/>
+              <rect x="132" y="96"  width="14" height="14" rx="2"/>
+              <rect x="132" y="114" width="14" height="14" rx="2"/>
+              <rect x="150" y="114" width="14" height="14" rx="2"/>
+              <rect x="168" y="114" width="14" height="14" rx="2"/>
+            </g>
+            <!-- head with eye -->
+            <rect x="186" y="114" width="14" height="14" rx="2" fill="#86efac"/>
+            <circle cx="195" cy="119" r="1.6" fill="#020617"/>
+            <!-- food -->
+            <circle cx="240" cy="60" r="6" fill="#ef4444"/>
+            <rect x="239" y="51" width="2" height="3" fill="#22c55e"/>
+            <!-- HUD -->
+            <text x="12" y="172" font-family="'Space Mono', monospace" font-size="9" fill="#86efac" letter-spacing="1">LEN 10</text>
+          </svg>
+        </div>
+        <div class="card-actions">
+          <button class="icon-btn" title="Duplicate to your projects" onclick="event.stopPropagation();"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
+        </div>
+        <div class="card-bed">
+          <div class="card-title">snake</div>
+          <div class="card-desc">A queue, a grid, and one apple. Tiny systems, classic outcome.</div>
+          <div class="tags"><span class="tag vi">grid</span><span class="tag ma">data-structures</span></div>
+        </div>
+      </article>
+
+      <!-- particle-playground -->
+      <article class="card" onclick="alert('open example: particle-playground')">
+        <div class="thumb" style="background: radial-gradient(ellipse at 50% 100%, #1e1b4b 0%, #050516 80%);">
+          <svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice" style="position:absolute; inset:0; width:100%; height:100%;">
+            <defs>
+              <radialGradient id="pp-em" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.9"/>
+                <stop offset="60%" stop-color="#f97316" stop-opacity="0.4"/>
+                <stop offset="100%" stop-color="#f97316" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+            <!-- emitter glow at bottom-center -->
+            <circle cx="160" cy="160" r="40" fill="url(#pp-em)"/>
+            <!-- rising particles, color-graded by altitude -->
+            <g>
+              <circle cx="120" cy="140" r="2.2" fill="#fbbf24" opacity="0.9"/>
+              <circle cx="138" cy="120" r="2.4" fill="#fbbf24" opacity="0.85"/>
+              <circle cx="156" cy="100" r="2.2" fill="#f97316" opacity="0.8"/>
+              <circle cx="172" cy="80"  r="2.0" fill="#ef4444" opacity="0.75"/>
+              <circle cx="186" cy="62"  r="1.7" fill="#c026d3" opacity="0.7"/>
+              <circle cx="198" cy="46"  r="1.5" fill="#7c3aed" opacity="0.6"/>
+              <circle cx="208" cy="32"  r="1.2" fill="#7c3aed" opacity="0.45"/>
+              <circle cx="148" cy="132" r="1.8" fill="#fbbf24" opacity="0.7"/>
+              <circle cx="172" cy="112" r="1.6" fill="#fbbf24" opacity="0.65"/>
+              <circle cx="190" cy="94"  r="1.4" fill="#f97316" opacity="0.6"/>
+              <circle cx="200" cy="76"  r="1.4" fill="#ef4444" opacity="0.55"/>
+              <circle cx="124" cy="118" r="1.5" fill="#fbbf24" opacity="0.6"/>
+              <circle cx="108" cy="100" r="1.3" fill="#f97316" opacity="0.5"/>
+              <circle cx="96"  cy="84"  r="1.2" fill="#ef4444" opacity="0.45"/>
+              <circle cx="84"  cy="66"  r="1.0" fill="#c026d3" opacity="0.4"/>
+              <circle cx="216" cy="120" r="1.6" fill="#fbbf24" opacity="0.65"/>
+              <circle cx="232" cy="102" r="1.4" fill="#f97316" opacity="0.55"/>
+              <circle cx="244" cy="84"  r="1.2" fill="#ef4444" opacity="0.5"/>
+              <circle cx="256" cy="66"  r="1.1" fill="#c026d3" opacity="0.45"/>
+            </g>
+            <!-- HUD -->
+            <text x="12" y="22" font-family="'Space Mono', monospace" font-size="9" fill="#fde68a" letter-spacing="1">N 240</text>
+            <text x="278" y="22" font-family="'Space Mono', monospace" font-size="9" fill="#fde68a" letter-spacing="1">60FPS</text>
+          </svg>
+        </div>
+        <div class="card-actions">
+          <button class="icon-btn" title="Duplicate to your projects" onclick="event.stopPropagation();"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
+        </div>
+        <div class="card-bed">
+          <div class="card-title">particle-playground</div>
+          <div class="card-desc">An emitter, gravity, color-by-age. Adjust the constants and watch.</div>
+          <div class="tags"><span class="tag or">simulation</span><span class="tag vi">particles</span></div>
+        </div>
+      </article>
+
+      <!-- platformer-starter -->
+      <article class="card" onclick="alert('open example: platformer-starter')">
+        <div class="thumb" style="background: linear-gradient(180deg, #1e3a8a 0%, #0c4a6e 70%, #064e3b 100%);">
+          <svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice" style="position:absolute; inset:0; width:100%; height:100%;">
+            <!-- distant clouds -->
+            <g fill="#bae6fd" opacity="0.5">
+              <ellipse cx="60"  cy="36" rx="16" ry="5"/>
+              <ellipse cx="200" cy="22" rx="22" ry="5"/>
+              <ellipse cx="270" cy="42" rx="14" ry="4"/>
+            </g>
+            <!-- mountains -->
+            <polygon points="0,140 60,80 110,120 160,70 220,130 280,90 320,140 320,180 0,180" fill="#1e293b" opacity="0.7"/>
+            <!-- ground tiles -->
+            <g fill="#22c55e">
+              <rect x="0"   y="148" width="120" height="8"/>
+              <rect x="0"   y="156" width="120" height="22" fill="#15803d"/>
+              <rect x="148" y="120" width="60"  height="8"/>
+              <rect x="148" y="128" width="60"  height="20" fill="#15803d"/>
+              <rect x="232" y="148" width="88"  height="8"/>
+              <rect x="232" y="156" width="88"  height="22" fill="#15803d"/>
+            </g>
+            <!-- coin -->
+            <circle cx="178" cy="106" r="4" fill="#fbbf24"/>
+            <circle cx="178" cy="106" r="2.4" fill="#fde68a"/>
+            <!-- player (mid-jump) -->
+            <g transform="translate(74,124)">
+              <rect x="-7" y="-12" width="14" height="14" rx="3" fill="#f97316"/>
+              <rect x="-5" y="-10" width="3"  height="3" fill="#fff"/>
+              <rect x="2"  y="-10" width="3"  height="3" fill="#fff"/>
+              <rect x="-4" y="-4"  width="2"  height="2" fill="#1f2937"/>
+              <rect x="2"  y="-4"  width="2"  height="2" fill="#1f2937"/>
+              <rect x="-7" y="2"   width="14" height="4" rx="1" fill="#c2410c"/>
+            </g>
+            <!-- HUD -->
+            <text x="12" y="22" font-family="'Space Mono', monospace" font-size="9" fill="#fde68a" letter-spacing="1">COINS 03</text>
+          </svg>
+        </div>
+        <div class="card-actions">
+          <button class="icon-btn" title="Duplicate to your projects" onclick="event.stopPropagation();"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
+        </div>
+        <div class="card-bed">
+          <div class="card-title">platformer-starter</div>
+          <div class="card-desc">Side-view jump-and-run with tile collision. Fork it, change the tiles.</div>
+          <div class="tags"><span class="tag cy">platformer</span><span class="tag vi">tilemap</span></div>
+        </div>
+      </article>
+
+    </div>
+
+    <!-- ===== BROWSE — empty / coming-soon ===== -->
+    <!-- Single quiet panel. NOT cards-pretending-to-be-empty,
+         NOT a marketing splash. The architectural slot is here;
+         the content isn't yet. Per brief: "the browse source
+         will appear here when the community layer lands" — voice
+         in plain declarative prose, restraint preferred. -->
+    <div class="src src-browse" data-source="browse" style="display: none;">
+      <section class="browse-soon">
+        <span class="eyebrow">Browse · soon</span>
+        <h2>The community layer hasn't landed yet</h2>
+        <p>
+          When it does, projects shared by other people will appear here — searchable in the same bar, alongside your work and the bundled examples. Until then, this slot is reserved.
+        </p>
+      </section>
+    </div>
+
+  </section>
+</main>
+
+<script>
+  /* ============================================================
+     NAVIGATOR
+     ============================================================ */
+  const nav = document.getElementById('nav');
+  function toggleNav(e) {
+    e.stopPropagation();
+    nav.classList.toggle('open');
+  }
+  document.addEventListener('click', () => nav.classList.remove('open'));
+
+  /* ============================================================
+     SOURCE TOGGLE + DEMO STATES
+
+     setSource(s) — visual-only switch between the three source
+     blocks in the grid. In the real product, this would also
+     rescope the search query (per implementer note in the
+     masthead). The mockup does not need to wire that — static
+     handoff is fine — but the demo toggle calls into setSource
+     so design review can verify each state.
+
+     setState(s) — design-review surface that combines source
+     selection with the populated/empty axis for "your projects".
+     Four states: yours-populated, yours-empty, examples, browse.
+     ============================================================ */
+  const grid = document.getElementById('grid');
+  const tabs = [...document.querySelectorAll('.tab')];
+  const sourceBlocks = {
+    yours:    document.querySelector('.src-yours'),
+    examples: document.querySelector('.src-examples'),
+    browse:   document.querySelector('.src-browse'),
+  };
+  const yoursCards = [...sourceBlocks.yours.querySelectorAll('.card')];
+
+  function setSource(s) {
+    // Browse is disabled-but-visible in v2; clicking it is a
+    // no-op except via the demo toggle (which bypasses the
+    // disabled gate to render the empty-state panel).
+    Object.entries(sourceBlocks).forEach(([k, el]) => {
+      el.style.display = (k === s) ? 'contents' : 'none';
+    });
+    tabs.forEach(t => {
+      const active = t.dataset.source === s;
+      t.classList.toggle('active', active);
+      t.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    // Clear any "your projects: empty" caption when leaving
+    // that source.
+    if (s !== 'yours') clearYoursEmptyCaption();
+  }
+
+  function clearYoursEmptyCaption() {
+    const cap = sourceBlocks.yours.querySelector('.empty-caption');
+    if (cap) cap.remove();
+  }
+  function showYoursEmptyCaption() {
+    if (!sourceBlocks.yours.querySelector('.empty-caption')) {
+      const cap = document.createElement('div');
+      cap.className = 'empty-caption';
+      // Same restrained copy as v1's empty state — the
+      // plus-card glyph is the page's one allowed moment of
+      // personality; the caption stays a quiet mono line.
+      cap.textContent = 'no projects yet — make one above';
+      sourceBlocks.yours.appendChild(cap);
+    }
+  }
+
+</script>
+
+</body>
+</html>
