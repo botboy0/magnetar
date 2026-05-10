@@ -79,13 +79,12 @@
     </div>
   </div>
 
-  <!-- Canvas focus + WebGL context plumbing. Copied from v1's
-       Rozenmad scaffold (fixtures/test_a/index.html). This is
-       working-but-unexplained code that solves real Love-in-iframe
-       issues (right-click menu, touch focus, fullscreen focus jumps,
-       WebGL context loss on tab suspend). Don't strip without a
-       concrete reason — these are the kinds of bugs that are hard
-       to debug after the fact. -->
+  <!-- Canvas focus + WebGL context plumbing. Originally copied from
+       v1's Rozenmad scaffold and kept verbatim — solves real
+       Love-in-iframe issues (right-click menu, touch focus,
+       fullscreen focus jumps, WebGL context loss on tab suspend).
+       Don't strip without a concrete reason — these are the kinds
+       of bugs that are hard to debug after the fact. -->
   <script>
     var container = document.querySelector("#container");
     var canvas = document.getElementById("canvas");

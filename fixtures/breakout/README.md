@@ -1,10 +1,9 @@
 # Breakout
 
-LOVE2D game running in-browser via [love.js](https://github.com/pfirsich/lovejs-api).
+A LÖVE2D Breakout sample. Magnetar's `?example=breakout` URL loads
+this into a fresh project; the editor's runner iframe handles
+playback. No standalone build artifacts — `main.lua` is the source
+of truth.
 
-## Source and build artifacts
-
-- `game.love` — the authoritative LOVE archive (a zip containing `main.lua`)
-- `game.data` — Emscripten asset package wrapping `game.love`
-- `game.js` — Emscripten-generated loader (pairs with `../../runtime/love.js`)
-- `src/main.lua` — reference copy of the Lua source extracted from `game.love`, kept for readability. If you update the game, rebuild `game.love` first, then sync this copy.
+Controls: move the mouse to steer the paddle, click or Space to
+launch, R to reset.
