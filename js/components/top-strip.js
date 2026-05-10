@@ -22,7 +22,8 @@ function otherPages() {
   if (path.endsWith('editor.html'))   return ['devlog', 'projects'];
   if (path.endsWith('devlog.html'))   return ['projects', 'editor'];
   if (path.endsWith('projects.html')) return ['devlog', 'editor'];
-  // Default (root /, index.html redirect target): treat as Projects.
+  // Root URL — server rewrites / to projects.html, so the dropdown
+  // is the Projects-page dropdown.
   return ['devlog', 'editor'];
 }
 
