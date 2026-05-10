@@ -35,11 +35,66 @@ import { initCodeFooter } from './components/code-footer.js';
 
 initTopStrip();
 
+/* Fetch a fixture's source files. Every fixture under fixtures/
+   ships main.lua + conf.lua — that uniformity is the contract,
+   so both are required and a missing one is an error, not a fallback. */
+async function fetchFixtureFiles(name) {
+  const [mainRes, confRes] = await Promise.all([
+    fetch(`fixtures/${name}/main.lua`),
+    fetch(`fixtures/${name}/conf.lua`),
+  ]);
+  if (!mainRes.ok || !confRes.ok) {
+    throw new Error(`fixture incomplete: ${name}`);
+  }
+  return {
+    'main.lua': await mainRes.text(),
+    'conf.lua': await confRes.text(),
+  };
+}
+
 /* ---------- project bootstrap ----------
    Resolve which project to open, creating a starter one if
    this is the user's first visit or their stored project is
    gone/corrupted. Returns the hydrated project object. */
 async function bootstrapProject() {
+  /* ?example=<name> opens the editor with a FRESH copy of the named
+     fixture as a new project — the "Duplicate to your projects" verb
+     from the Projects page Examples tab. Existing projects are
+     untouched. We strip the param after creating so a reload doesn't
+     silently spawn a second duplicate. */
+  const params = new URLSearchParams(location.search);
+  const exampleName = params.get('example');
+  if (exampleName) {
+    try {
+      const files = await fetchFixtureFiles(exampleName);
+      const newId = createProject({
+        title: exampleName,
+        files,
+        activeFile: 'main.lua',
+      });
+      if (newId) {
+        setActiveProjectId(newId);
+        history.replaceState({}, '', location.pathname);
+        return loadProject(newId);
+      }
+      /* Storage broken — fall through to the in-memory path below
+         after the welcome-starter fetch, but with the example's
+         files instead of welcome's. */
+      console.warn('[editor] storage unavailable for example — running in-memory');
+      return {
+        id: null,
+        title: exampleName,
+        files,
+        activeFile: 'main.lua',
+      };
+    } catch (e) {
+      /* Bad ?example= name. Don't fail the whole boot — drop the
+         param, log, and fall through to the normal flow. */
+      console.warn(`[editor] could not load example "${exampleName}":`, e);
+      history.replaceState({}, '', location.pathname);
+    }
+  }
+
   const existingId = getActiveProjectId();
   if (existingId) {
     const existing = loadProject(existingId);
